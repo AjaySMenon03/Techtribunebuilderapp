@@ -234,3 +234,21 @@ export async function uploadThumbnail(blob: Blob): Promise<string> {
   if (!res.ok) throw new Error(data.error || 'Thumbnail upload failed');
   return data.url;
 }
+
+/**
+ * Uploads an image File to PG storage and returns
+ * both the signed URL and the storage path (for re-signing later).
+ */
+export async function uploadImageFile(file: File): Promise<{ url: string; path: string }> {
+  const headers = await getUploadHeaders();
+  const form = new FormData();
+  form.append('file', file, file.name);
+  const res = await fetch(`${BASE}/upload`, {
+    method: 'POST',
+    headers,
+    body: form,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Image upload failed');
+  return { url: data.url, path: data.path };
+}

@@ -100,10 +100,33 @@ export function ProfileEditorPage() {
       try {
         if (profileId) {
           const profile = await pgApi.fetchProfile(profileId);
+          const layers: EditorLayer[] = profile.layers || [];
+
+          // Detect image layers with stale blob URLs (from previous sessions).
+          // These are unrecoverable — clear the src so the canvas shows a
+          // placeholder, and warn the user to re-upload.
+          let staleBlobCount = 0;
+          for (const layer of layers) {
+            if (
+              layer.type === 'image' &&
+              layer.src?.startsWith('blob:') &&
+              !layer.storagePath
+            ) {
+              layer.src = '';
+              staleBlobCount++;
+            }
+          }
+          if (staleBlobCount > 0) {
+            toast.warning(
+              `${staleBlobCount} image${staleBlobCount > 1 ? 's have' : ' has'} expired and need${staleBlobCount > 1 ? '' : 's'} to be re-uploaded.`,
+              { duration: 6000 },
+            );
+          }
+
           dispatch({
             type: 'LOAD_STATE',
             state: {
-              layers: profile.layers || [],
+              layers,
               selectedLayerId: null,
               canvasConfig: profile.canvasConfig || DEFAULT_CANVAS_CONFIG,
               profileName: profile.name,
@@ -131,9 +154,11 @@ export function ProfileEditorPage() {
   }, [profileId, templateId, dispatch, initialLoaded]);
 
   // Preload images whenever layers change
+  // Skip blob URLs — they are either freshly created (already preloaded
+  // explicitly by handleAddImageFile) or stale from a previous session.
   useEffect(() => {
     for (const layer of state.layers) {
-      if (layer.type === 'image' && layer.src) {
+      if (layer.type === 'image' && layer.src && !layer.src.startsWith('blob:')) {
         preload(layer.src);
       }
     }
@@ -153,6 +178,44 @@ export function ProfileEditorPage() {
     [addImageLayer, preload],
   );
 
+  /**
+   * Upload a file to persistent storage, then create an image layer
+   * with the signed URL + storagePath so it survives across sessions.
+   */
+  const handleAddImageFile = useCallback(
+    async (file: File) => {
+      // 1. Get dimensions from the file
+      const blobUrl = URL.createObjectURL(file);
+      const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        };
+        img.onerror = () => resolve({ w: 200, h: 200 });
+        img.src = blobUrl;
+      });
+
+      // 2. Create layer with blob URL for instant preview
+      const layer = addImageLayer(blobUrl, dims.w, dims.h);
+      preload(blobUrl);
+
+      // 3. Upload to storage in the background
+      try {
+        const { url: signedUrl, path: storagePath } = await pgApi.uploadImageFile(file);
+        // 4. Swap blob URL → persistent signed URL + store storagePath
+        updateLayer(layer.id, { src: signedUrl, storagePath });
+        preload(signedUrl);
+        // Revoke the temporary blob URL
+        URL.revokeObjectURL(blobUrl);
+      } catch (err: any) {
+        console.error('Image upload failed:', err);
+        toast.error(`Image upload failed: ${err.message || 'Unknown error'}`);
+        // Layer stays with blob URL — will work this session but won't persist
+      }
+    },
+    [addImageLayer, updateLayer, preload],
+  );
+
   const handleUpdateLayer = useCallback(
     (id: string, changes: Partial<EditorLayer>) => updateLayer(id, changes),
     [updateLayer],
@@ -166,7 +229,11 @@ export function ProfileEditorPage() {
           (l) => l.id === state.selectedLayerId && l.type === 'image',
         );
         if (layer) {
-          updateLayer(layer.id, { src: asset.url, name: asset.name });
+          updateLayer(layer.id, {
+            src: asset.url,
+            name: asset.name,
+            storagePath: asset.storagePath,
+          });
           preload(asset.url);
           toast.success(`Replaced with "${asset.name}"`);
           setAssetBrowserReplaceMode(false);
@@ -190,6 +257,7 @@ export function ProfileEditorPage() {
           visible: true,
           locked: false,
           src: asset.url,
+          storagePath: asset.storagePath,
           adjustments: DEFAULT_IMAGE_ADJUSTMENTS,
         };
         dispatch({ type: 'ADD_LAYER', layer });
@@ -216,6 +284,7 @@ export function ProfileEditorPage() {
           visible: true,
           locked: false,
           src: asset.url,
+          storagePath: asset.storagePath,
           adjustments: DEFAULT_IMAGE_ADJUSTMENTS,
         };
         dispatch({ type: 'ADD_LAYER', layer });
@@ -375,6 +444,7 @@ export function ProfileEditorPage() {
                 onReorderLayers={reorderLayers}
                 onAddLayer={handleAddLayer}
                 onAddImageLayer={handleAddImageLayer}
+                onAddImageFile={handleAddImageFile}
                 onOpenAssetBrowser={() => setAssetBrowserOpen(true)}
               />
             </div>
@@ -391,6 +461,7 @@ export function ProfileEditorPage() {
             onReorderLayers={reorderLayers}
             onAddLayer={handleAddLayer}
             onAddImageLayer={handleAddImageLayer}
+            onAddImageFile={handleAddImageFile}
             onOpenAssetBrowser={() => setAssetBrowserOpen(true)}
           />
         )}

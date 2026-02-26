@@ -857,6 +857,42 @@ app.get("/make-server-607373f0/pg/profiles/:id", async (c) => {
     const id = c.req.param("id");
     const profile = await kv.get(`pg-profile:${id}`);
     if (!profile) return c.json({ error: "Profile not found" }, 404);
+
+    // Re-sign image URLs for any layers that have a storagePath.
+    // This fixes expired signed URLs and ensures images always load.
+    if (profile.layers && Array.isArray(profile.layers)) {
+      const sb = supabaseAdmin();
+      const layersToResign = profile.layers.filter(
+        (l: any) => l.type === "image" && l.storagePath
+      );
+
+      if (layersToResign.length > 0) {
+        const paths = layersToResign.map((l: any) => l.storagePath);
+        // createSignedUrls accepts an array of paths
+        const { data: signedUrls, error: signError } = await sb.storage
+          .from(PG_BUCKET)
+          .createSignedUrls(paths, 60 * 60 * 24 * 7); // 7 days
+
+        if (!signError && signedUrls) {
+          // Build a path→url map
+          const urlMap: Record<string, string> = {};
+          for (const item of signedUrls) {
+            if (item.signedUrl && item.path) {
+              urlMap[item.path] = item.signedUrl;
+            }
+          }
+          // Update each layer's src with the freshly signed URL
+          for (const layer of profile.layers) {
+            if (layer.storagePath && urlMap[layer.storagePath]) {
+              layer.src = urlMap[layer.storagePath];
+            }
+          }
+        } else if (signError) {
+          console.log(`Failed to re-sign URLs for profile ${id}: ${signError.message}`);
+        }
+      }
+    }
+
     return c.json({ profile });
   } catch (e) {
     console.log(`PG get profile error: ${e}`);

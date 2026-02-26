@@ -57,6 +57,8 @@ interface LayerPanelProps {
   onReorderLayers: (from: number, to: number) => void;
   onAddLayer: (type: LayerType) => void;
   onAddImageLayer: (src: string, w: number, h: number) => void;
+  /** Upload a file to storage and create a persistent image layer */
+  onAddImageFile?: (file: File) => void;
   onOpenAssetBrowser?: () => void;
 }
 
@@ -207,6 +209,7 @@ export const LayerPanel = memo(function LayerPanel({
   onReorderLayers,
   onAddLayer,
   onAddImageLayer,
+  onAddImageFile,
   onOpenAssetBrowser,
 }: LayerPanelProps) {
   const sensors = useSensors(
@@ -231,16 +234,25 @@ export const LayerPanel = memo(function LayerPanel({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+
+      // If the parent provides onAddImageFile, delegate to it entirely.
+      // It will handle uploading to persistent storage + creating the layer.
+      if (onAddImageFile) {
+        onAddImageFile(file);
+        e.target.value = '';
+        return;
+      }
+
+      // Legacy fallback: blob URL (won't persist across sessions)
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
         onAddImageLayer(url, img.naturalWidth, img.naturalHeight);
       };
       img.src = url;
-      // Reset input so the same file can be re-selected
       e.target.value = '';
     },
-    [onAddImageLayer],
+    [onAddImageLayer, onAddImageFile],
   );
 
   // Layers are displayed top→bottom (reverse of render order)

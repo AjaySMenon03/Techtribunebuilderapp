@@ -110,6 +110,8 @@ export interface EditorLayer {
 
   // Image
   src?: string;
+  /** Storage path in the PG bucket – used to re-sign URLs on load */
+  storagePath?: string;
   adjustments?: ImageAdjustments;
 
   // Name (text)
