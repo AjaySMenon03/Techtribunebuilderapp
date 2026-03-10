@@ -9,7 +9,7 @@ import type { ThemeConfig } from '../types';
 import { generateWebHtml, generateBodyHtml } from './web-renderer';
 import { generateWebCss } from './css-generator';
 import { generateEmailHtml } from './email-renderer';
-import { renderA4, type A4Format } from './a4-renderer';
+import { captureA4Image, captureA4Pdf, type A4Format } from './a4-dom-renderer';
 
 export type ExportFormat = 'web-html' | 'email-html' | 'a4-png' | 'a4-jpg' | 'a4-pdf' | 'zip' | 'clipboard';
 
@@ -48,7 +48,9 @@ function collectAssetUrls(sections: Section[]): string[] {
         break;
       case 'appreciation':
         (data.members || []).forEach((m: any) => {
-          if (m.photoUrl) urls.add(m.photoUrl);
+          // Support multiple photos (photoUrls array) with fallback to single photoUrl
+          const photos: string[] = (m.photoUrls && m.photoUrls.length > 0) ? m.photoUrls : (m.photoUrl ? [m.photoUrl] : []);
+          photos.forEach((url: string) => urls.add(url));
         });
         break;
       case 'project_update':
@@ -124,12 +126,19 @@ export async function exportEmailHtml(options: ExportOptions): Promise<void> {
 
 /**
  * Export as A4 image (PNG or JPG) or PDF.
+ * Uses the DOM-based renderer for pixel-perfect fidelity with the live preview.
  */
 export async function exportA4(options: ExportOptions, format: A4Format): Promise<void> {
-  const blob = await renderA4({ ...options, format });
   const ext = format === 'jpg' ? 'jpg' : format === 'pdf' ? 'pdf' : 'png';
   const mimeMap: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', pdf: 'application/pdf' };
   const filename = `${slugify(options.title)}-a4.${ext}`;
+
+  let blob: Blob;
+  if (format === 'pdf') {
+    blob = await captureA4Pdf(options);
+  } else {
+    blob = await captureA4Image(options, format as 'png' | 'jpg');
+  }
   saveAs(new Blob([blob], { type: mimeMap[ext] }), filename);
 }
 

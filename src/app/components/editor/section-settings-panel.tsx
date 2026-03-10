@@ -14,13 +14,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { Plus, Trash2, GripVertical, X, Settings2, Palette, LayoutGrid, Columns, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { Plus, Trash2, GripVertical, X, Settings2, Palette, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Textarea } from '../ui/textarea';
+import { MobileEditingBanner } from './mobile-override-badge';
+import { MobileAwareColorField, MobileAwareColumnSelector, MobileAwareAlignmentSelector, MobileVisibilityToggle, MobileAwarePaddingField } from './mobile-aware-fields';
+import { getMobileOverrideCount } from '../../lib/use-mobile-aware-data';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 export function SectionSettingsPanel() {
   const section = useEditorStore((s) => s.selectedSection());
-  const updateData = useEditorStore((s) => s.updateSectionData);
+  const previewMode = useEditorStore((s) => s.previewMode);
+  const clearAllMobileOverrides = useEditorStore((s) => s.clearAllMobileOverrides);
 
   if (!section) {
     return (
@@ -33,9 +54,20 @@ export function SectionSettingsPanel() {
     );
   }
 
+  const isMobile = previewMode === 'mobile';
+  const overrideCount = getMobileOverrideCount(section);
+
   return (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-5">
+        {/* Mobile editing banner */}
+        {isMobile && (
+          <MobileEditingBanner
+            overrideCount={overrideCount}
+            onClearAll={() => clearAllMobileOverrides(section.id)}
+          />
+        )}
+
         {/* Section type label */}
         <div>
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -43,6 +75,15 @@ export function SectionSettingsPanel() {
             {SECTION_TYPE_LABELS[section.baseType]}
           </h3>
         </div>
+
+        {/* Mobile visibility + padding (shown in mobile mode for all section types) */}
+        {isMobile && section.baseType !== 'divider' && (
+          <>
+            <MobileVisibilityToggle section={section} />
+            <MobileAwarePaddingField section={section} />
+            <Separator />
+          </>
+        )}
 
         {/* Type-specific settings */}
         {section.baseType === 'header' && <HeaderSettings section={section} />}
@@ -55,6 +96,22 @@ export function SectionSettingsPanel() {
         {section.baseType === 'footer' && <FooterSettings section={section} />}
       </div>
     </ScrollArea>
+  );
+}
+
+// --- Shared Color Section ---
+function SectionColorFields({ section }: { section: Section }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-1">
+        <Palette className="w-3.5 h-3.5 text-muted-foreground" />
+        <Label className="text-xs font-semibold">Section Colors</Label>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <MobileAwareColorField section={section} fieldKey="fontColor" label="Font Color" defaultValue="#000000" />
+        <MobileAwareColorField section={section} fieldKey="bgColor" label="Background" defaultValue="#f4efe5" />
+      </div>
+    </div>
   );
 }
 
@@ -75,60 +132,11 @@ function HeaderSettings({ section }: { section: Section }) {
         <ImageUpload value={d.logoUrl || ''} onChange={(url) => updateData(section.id, { logoUrl: url })} aspectLabel="Recommended: square" />
       </Field>
       <Field label="Banner Image">
-        <ImageUpload value={d.bannerUrl || ''} onChange={(url) => updateData(section.id, { bannerUrl: url })} aspectLabel="Recommended: 600x200" />
+        <ImageUpload value={d.bannerUrl || ''} onChange={(url) => updateData(section.id, { bannerUrl: url })} aspectLabel="Recommended: 700x200" />
       </Field>
 
-      {/* Section Colors */}
       <Separator />
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Palette className="w-3.5 h-3.5 text-muted-foreground" />
-          <Label className="text-xs font-semibold">Section Colors</Label>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Font Color</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={d.fontColor || '#000000'}
-                onChange={(e) => updateData(section.id, { fontColor: e.target.value })}
-                className="w-8 h-8 rounded border border-border cursor-pointer p-0.5"
-              />
-              <Input
-                value={d.fontColor || '#000000'}
-                onChange={(e) => updateData(section.id, { fontColor: e.target.value })}
-                className="text-xs flex-1 font-mono"
-                maxLength={7}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Background</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={d.bgColor || '#f4efe5'}
-                onChange={(e) => updateData(section.id, { bgColor: e.target.value })}
-                className="w-8 h-8 rounded border border-border cursor-pointer p-0.5"
-              />
-              <Input
-                value={d.bgColor || '#f4efe5'}
-                onChange={(e) => updateData(section.id, { bgColor: e.target.value })}
-                className="text-xs flex-1 font-mono"
-                maxLength={7}
-              />
-            </div>
-          </div>
-        </div>
-        {/* Color preview strip */}
-        <div
-          className="h-6 rounded-md border border-border flex items-center justify-center text-xs font-medium"
-          style={{ backgroundColor: d.bgColor || '#f4efe5', color: d.fontColor || '#000000' }}
-        >
-          Preview
-        </div>
-      </div>
+      <SectionColorFields section={section} />
     </div>
   );
 }
@@ -150,57 +158,8 @@ function MeetEngineerSettings({ section }: { section: Section }) {
         <ImageUpload value={d.photoUrl || ''} onChange={(url) => updateData(section.id, { photoUrl: url })} aspectLabel="Square crop recommended" />
       </Field>
 
-      {/* Section Colors */}
       <Separator />
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Palette className="w-3.5 h-3.5 text-muted-foreground" />
-          <Label className="text-xs font-semibold">Section Colors</Label>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Font Color</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={d.fontColor || '#000000'}
-                onChange={(e) => updateData(section.id, { fontColor: e.target.value })}
-                className="w-8 h-8 rounded border border-border cursor-pointer p-0.5"
-              />
-              <Input
-                value={d.fontColor || '#000000'}
-                onChange={(e) => updateData(section.id, { fontColor: e.target.value })}
-                className="text-xs flex-1 font-mono"
-                maxLength={7}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Background</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={d.bgColor || '#f4efe5'}
-                onChange={(e) => updateData(section.id, { bgColor: e.target.value })}
-                className="w-8 h-8 rounded border border-border cursor-pointer p-0.5"
-              />
-              <Input
-                value={d.bgColor || '#f4efe5'}
-                onChange={(e) => updateData(section.id, { bgColor: e.target.value })}
-                className="text-xs flex-1 font-mono"
-                maxLength={7}
-              />
-            </div>
-          </div>
-        </div>
-        {/* Color preview strip */}
-        <div
-          className="h-6 rounded-md border border-border flex items-center justify-center text-xs font-medium"
-          style={{ backgroundColor: d.bgColor || '#f4efe5', color: d.fontColor || '#000000' }}
-        >
-          Preview
-        </div>
-      </div>
+      <SectionColorFields section={section} />
       <Separator />
 
       <QnAList sectionId={section.id} items={d.qna || []} />
@@ -292,81 +251,16 @@ function AppreciationSettings({ section }: { section: Section }) {
 
   return (
     <div className="space-y-4">
-      {/* Section Colors */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Palette className="w-3.5 h-3.5 text-muted-foreground" />
-          <Label className="text-xs font-semibold">Section Colors</Label>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Font Color</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={d.fontColor || '#000000'}
-                onChange={(e) => updateData(section.id, { fontColor: e.target.value })}
-                className="w-8 h-8 rounded border border-border cursor-pointer p-0.5"
-              />
-              <Input
-                value={d.fontColor || '#000000'}
-                onChange={(e) => updateData(section.id, { fontColor: e.target.value })}
-                className="text-xs flex-1 font-mono"
-                maxLength={7}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Background</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={d.bgColor || '#f4efe5'}
-                onChange={(e) => updateData(section.id, { bgColor: e.target.value })}
-                className="w-8 h-8 rounded border border-border cursor-pointer p-0.5"
-              />
-              <Input
-                value={d.bgColor || '#f4efe5'}
-                onChange={(e) => updateData(section.id, { bgColor: e.target.value })}
-                className="text-xs flex-1 font-mono"
-                maxLength={7}
-              />
-            </div>
-          </div>
-        </div>
-        {/* Color preview strip */}
-        <div
-          className="h-6 rounded-md border border-border flex items-center justify-center text-xs font-medium"
-          style={{ backgroundColor: d.bgColor || '#f4efe5', color: d.fontColor || '#000000' }}
-        >
-          Preview
-        </div>
-      </div>
+      <SectionColorFields section={section} />
 
       <Separator />
 
       {/* Members Per Row */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <LayoutGrid className="w-3.5 h-3.5 text-muted-foreground" />
-          <Label className="text-xs font-semibold">Members Per Row</Label>
-        </div>
-        <div className="flex items-center gap-2">
-          {[1, 2, 3].map((n) => (
-            <button
-              key={n}
-              onClick={() => updateData(section.id, { membersPerRow: n })}
-              className={`flex-1 h-8 rounded-md border text-xs font-medium transition-colors ${
-                (d.membersPerRow || 2) === n
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:bg-muted'
-              }`}
-            >
-              {n} {n === 1 ? 'column' : 'columns'}
-            </button>
-          ))}
-        </div>
-      </div>
+      <MobileAwareColumnSelector
+        section={section}
+        fieldKey="membersPerRow"
+        label="Members Per Row"
+      />
 
       <Separator />
 
@@ -394,10 +288,10 @@ function AppreciationSettings({ section }: { section: Section }) {
             placeholder="Name"
             className="text-sm"
           />
-          <ImageUpload
-            value={m.photoUrl || ''}
-            onChange={(url) => updateAppreciationMember(section.id, m.id, { photoUrl: url })}
-            aspectLabel="Square"
+          <MemberPhotosField
+            member={m}
+            sectionId={section.id}
+            onUpdate={updateAppreciationMember}
           />
           {/* Card Color */}
           <div className="space-y-1.5">
@@ -441,7 +335,6 @@ function AppreciationSettings({ section }: { section: Section }) {
 function ProjectUpdateSettings({ section }: { section: Section }) {
   const updateData = useEditorStore((s) => s.updateSectionData);
   const d = section.data;
-  const columns: number = Math.min(Math.max(d.columns || 1, 1), 3);
 
   return (
     <div className="space-y-4">
@@ -467,28 +360,12 @@ function ProjectUpdateSettings({ section }: { section: Section }) {
       <Separator />
 
       {/* 2. Content Columns */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Columns className="w-3.5 h-3.5 text-muted-foreground" />
-          <Label className="text-xs font-semibold">Content Columns</Label>
-        </div>
-        <div className="flex items-center gap-2">
-          {[1, 2, 3].map((n) => (
-            <button
-              key={n}
-              onClick={() => updateData(section.id, { columns: n })}
-              className={`flex-1 h-8 rounded-md border text-xs font-medium transition-colors ${
-                columns === n
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background border-border hover:bg-muted'
-              }`}
-            >
-              {n} {n === 1 ? 'column' : 'columns'}
-            </button>
-          ))}
-        </div>
-        <p className="text-[10px] text-muted-foreground">Content auto-flows across columns</p>
-      </div>
+      <MobileAwareColumnSelector
+        section={section}
+        fieldKey="columns"
+        label="Content Columns"
+      />
+      <p className="text-[10px] text-muted-foreground">Content auto-flows across columns</p>
 
       <Separator />
 
@@ -507,55 +384,7 @@ function ProjectUpdateSettings({ section }: { section: Section }) {
       <Separator />
 
       {/* 3. Section Colors */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Palette className="w-3.5 h-3.5 text-muted-foreground" />
-          <Label className="text-xs font-semibold">Section Colors</Label>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Font Color</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={d.fontColor || '#000000'}
-                onChange={(e) => updateData(section.id, { fontColor: e.target.value })}
-                className="w-8 h-8 rounded border border-border cursor-pointer p-0.5"
-              />
-              <Input
-                value={d.fontColor || '#000000'}
-                onChange={(e) => updateData(section.id, { fontColor: e.target.value })}
-                className="text-xs flex-1 font-mono"
-                maxLength={7}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Background</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={d.bgColor || '#f4efe5'}
-                onChange={(e) => updateData(section.id, { bgColor: e.target.value })}
-                className="w-8 h-8 rounded border border-border cursor-pointer p-0.5"
-              />
-              <Input
-                value={d.bgColor || '#f4efe5'}
-                onChange={(e) => updateData(section.id, { bgColor: e.target.value })}
-                className="text-xs flex-1 font-mono"
-                maxLength={7}
-              />
-            </div>
-          </div>
-        </div>
-        {/* Color preview strip */}
-        <div
-          className="h-6 rounded-md border border-border flex items-center justify-center text-xs font-medium"
-          style={{ backgroundColor: d.bgColor || '#f4efe5', color: d.fontColor || '#000000' }}
-        >
-          Preview
-        </div>
-      </div>
+      <SectionColorFields section={section} />
     </div>
   );
 }
@@ -565,8 +394,7 @@ function ProjectUpdateSettings({ section }: { section: Section }) {
 function FounderFocusSettings({ section }: { section: Section }) {
   const updateData = useEditorStore((s) => s.updateSectionData);
   const d = section.data;
-  const textAlign = d.textAlign || 'center';
-  const alignOptions: Array<{ value: string; icon: typeof AlignLeft; label: string }> = [
+  const alignOptions = [
     { value: 'left', icon: AlignLeft, label: 'Left' },
     { value: 'center', icon: AlignCenter, label: 'Center' },
     { value: 'right', icon: AlignRight, label: 'Right' },
@@ -589,78 +417,16 @@ function FounderFocusSettings({ section }: { section: Section }) {
       </Field>
 
       {/* Text Alignment */}
-      <Field label="Alignment">
-        <div className="flex items-center gap-1">
-          {alignOptions.map((opt) => {
-            const Icon = opt.icon;
-            const isActive = textAlign === opt.value;
-            return (
-              <Button
-                key={opt.value}
-                size="sm"
-                variant={isActive ? 'default' : 'outline'}
-                className={`flex-1 gap-1.5 ${isActive ? 'ring-2 ring-primary/30' : ''}`}
-                onClick={() => updateData(section.id, { textAlign: opt.value })}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span className="text-xs">{opt.label}</span>
-              </Button>
-            );
-          })}
-        </div>
-      </Field>
+      <MobileAwareAlignmentSelector
+        section={section}
+        fieldKey="textAlign"
+        label="Alignment"
+        options={alignOptions}
+      />
 
       {/* Section Colors */}
       <Separator />
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Palette className="w-3.5 h-3.5 text-muted-foreground" />
-          <Label className="text-xs font-semibold">Section Colors</Label>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Font Color</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={d.fontColor || '#000000'}
-                onChange={(e) => updateData(section.id, { fontColor: e.target.value })}
-                className="w-8 h-8 rounded border border-border cursor-pointer p-0.5"
-              />
-              <Input
-                value={d.fontColor || '#000000'}
-                onChange={(e) => updateData(section.id, { fontColor: e.target.value })}
-                className="text-xs flex-1 font-mono"
-                maxLength={7}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Background</Label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={d.bgColor || '#f4efe5'}
-                onChange={(e) => updateData(section.id, { bgColor: e.target.value })}
-                className="w-8 h-8 rounded border border-border cursor-pointer p-0.5"
-              />
-              <Input
-                value={d.bgColor || '#f4efe5'}
-                onChange={(e) => updateData(section.id, { bgColor: e.target.value })}
-                className="text-xs flex-1 font-mono"
-                maxLength={7}
-              />
-            </div>
-          </div>
-        </div>
-        {/* Color preview strip */}
-        <div
-          className="h-6 rounded-md border border-border flex items-center justify-center text-xs font-medium"
-          style={{ backgroundColor: d.bgColor || '#f4efe5', color: d.fontColor || '#000000' }}
-        >
-          Preview
-        </div>
-      </div>
+      <SectionColorFields section={section} />
     </div>
   );
 }
@@ -697,44 +463,133 @@ function ComicSettings({ section }: { section: Section }) {
       </Field>
 
       {/* Section Colors */}
-      <div className="pt-3 border-t border-border">
-        <p className="text-xs font-semibold mb-3 text-muted-foreground uppercase tracking-wide">Section Colors</p>
-        <div className="space-y-3">
-          <Field label="Font Color">
-            <div className="flex items-center gap-2">
-              <input type="color" value={fontColor} onChange={(e) => updateData(section.id, { fontColor: e.target.value })} className="w-8 h-8 rounded cursor-pointer border border-border" />
-              <Input value={fontColor} onChange={(e) => updateData(section.id, { fontColor: e.target.value })} className="text-xs font-mono flex-1" />
-            </div>
-          </Field>
-          <Field label="Background Color">
-            <div className="flex items-center gap-2">
-              <input type="color" value={bgColor} onChange={(e) => updateData(section.id, { bgColor: e.target.value })} className="w-8 h-8 rounded cursor-pointer border border-border" />
-              <Input value={bgColor} onChange={(e) => updateData(section.id, { bgColor: e.target.value })} className="text-xs font-mono flex-1" />
-            </div>
-          </Field>
-          <div className="h-3 rounded-md border border-border" style={{ background: `linear-gradient(to right, ${bgColor}, ${fontColor})` }} />
-        </div>
-      </div>
+      <Separator />
+      <SectionColorFields section={section} />
     </div>
   );
 }
 
 // --- Footer ---
 
+/** Ensure every social link has a unique id (backward compat with old data). */
+function ensureLinkIds(links: any[]): any[] {
+  let changed = false;
+  const result = links.map((l) => {
+    if (l.id) return l;
+    changed = true;
+    return { ...l, id: crypto.randomUUID() };
+  });
+  return changed ? result : links;
+}
+
+function SortableSocialLink({
+  link,
+  index,
+  onUpdate,
+  onRemove,
+}: {
+  link: any;
+  index: number;
+  onUpdate: (i: number, field: string, val: string) => void;
+  onRemove: (i: number) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: link.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+    position: 'relative' as const,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-1.5">
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing shrink-0 p-0.5 text-muted-foreground/50 hover:text-muted-foreground touch-none"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="w-3.5 h-3.5" />
+      </button>
+      <Input
+        value={link.platform || ''}
+        onChange={(e) => onUpdate(index, 'platform', e.target.value)}
+        placeholder="Platform"
+        className="text-sm w-24"
+      />
+      <Input
+        value={link.url || ''}
+        onChange={(e) => onUpdate(index, 'url', e.target.value)}
+        placeholder="https://..."
+        className="text-sm flex-1"
+      />
+      <Button variant="ghost" size="sm" onClick={() => onRemove(index)} className="h-8 w-8 p-0 shrink-0">
+        <X className="w-3.5 h-3.5 text-destructive" />
+      </Button>
+    </div>
+  );
+}
+
 function FooterSettings({ section }: { section: Section }) {
   const updateData = useEditorStore((s) => s.updateSectionData);
   const d = section.data;
-  const links = d.socialLinks || [];
-  const fontColor = d.fontColor || '#000000';
-  const bgColor = d.bgColor || '#f4efe5';
+  const rawLinks = d.socialLinks || [];
 
-  const addLink = () => updateData(section.id, { socialLinks: [...links, { platform: '', url: '' }] });
-  const removeLink = (i: number) => updateData(section.id, { socialLinks: links.filter((_: any, idx: number) => idx !== i) });
-  const updateLink = (i: number, field: string, val: string) => {
-    updateData(section.id, {
-      socialLinks: links.map((l: any, idx: number) => (idx === i ? { ...l, [field]: val } : l)),
-    });
-  };
+  // Compute links with stable ids (pure, no side effects)
+  const links = useMemo(() => ensureLinkIds(rawLinks), [rawLinks]);
+
+  // Persist ids back to the store if they were missing (side effect, runs after render)
+  useEffect(() => {
+    if (links !== rawLinks && rawLinks.length > 0) {
+      updateData(section.id, { socialLinks: links });
+    }
+  }, [links, rawLinks, section.id, updateData]);
+
+  const linkIds = useMemo(() => links.map((l: any) => l.id), [links]);
+
+  const addLink = useCallback(
+    () => updateData(section.id, { socialLinks: [...links, { id: crypto.randomUUID(), platform: '', url: '' }] }),
+    [links, section.id, updateData],
+  );
+  const removeLink = useCallback(
+    (i: number) => updateData(section.id, { socialLinks: links.filter((_: any, idx: number) => idx !== i) }),
+    [links, section.id, updateData],
+  );
+  const updateLink = useCallback(
+    (i: number, field: string, val: string) => {
+      updateData(section.id, {
+        socialLinks: links.map((l: any, idx: number) => (idx === i ? { ...l, [field]: val } : l)),
+      });
+    },
+    [links, section.id, updateData],
+  );
+
+  const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 5 } });
+  const keyboardSensor = useSensor(KeyboardSensor);
+  const sensors = useSensors(pointerSensor, keyboardSensor);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        const oldIndex = links.findIndex((l: any) => l.id === active.id);
+        const newIndex = links.findIndex((l: any) => l.id === over.id);
+        if (oldIndex !== -1 && newIndex !== -1) {
+          updateData(section.id, { socialLinks: arrayMove(links, oldIndex, newIndex) });
+        }
+      }
+    },
+    [links, section.id, updateData],
+  );
 
   return (
     <div className="space-y-4">
@@ -748,46 +603,30 @@ function FooterSettings({ section }: { section: Section }) {
             <Plus className="w-3 h-3 mr-1" /> Add
           </Button>
         </div>
-        {links.map((link: any, i: number) => (
-          <div key={i} className="flex items-center gap-1.5">
-            <Input
-              value={link.platform || ''}
-              onChange={(e) => updateLink(i, 'platform', e.target.value)}
-              placeholder="Platform"
-              className="text-sm w-24"
-            />
-            <Input
-              value={link.url || ''}
-              onChange={(e) => updateLink(i, 'url', e.target.value)}
-              placeholder="https://..."
-              className="text-sm flex-1"
-            />
-            <Button variant="ghost" size="sm" onClick={() => removeLink(i)} className="h-8 w-8 p-0 shrink-0">
-              <X className="w-3.5 h-3.5 text-destructive" />
-            </Button>
-          </div>
-        ))}
+        {links.length > 0 ? (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={linkIds} strategy={verticalListSortingStrategy}>
+              {links.map((link: any, i: number) => (
+                <SortableSocialLink
+                  key={link.id}
+                  link={link}
+                  index={i}
+                  onUpdate={updateLink}
+                  onRemove={removeLink}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <p className="text-xs text-muted-foreground text-center py-2 italic">
+            No social links added yet
+          </p>
+        )}
       </div>
 
       {/* Section Colors */}
-      <div className="pt-3 border-t border-border">
-        <p className="text-xs font-semibold mb-3 text-muted-foreground uppercase tracking-wide">Section Colors</p>
-        <div className="space-y-3">
-          <Field label="Font Color">
-            <div className="flex items-center gap-2">
-              <input type="color" value={fontColor} onChange={(e) => updateData(section.id, { fontColor: e.target.value })} className="w-8 h-8 rounded cursor-pointer border border-border" />
-              <Input value={fontColor} onChange={(e) => updateData(section.id, { fontColor: e.target.value })} className="text-xs font-mono flex-1" />
-            </div>
-          </Field>
-          <Field label="Background Color">
-            <div className="flex items-center gap-2">
-              <input type="color" value={bgColor} onChange={(e) => updateData(section.id, { bgColor: e.target.value })} className="w-8 h-8 rounded cursor-pointer border border-border" />
-              <Input value={bgColor} onChange={(e) => updateData(section.id, { bgColor: e.target.value })} className="text-xs font-mono flex-1" />
-            </div>
-          </Field>
-          <div className="h-3 rounded-md border border-border" style={{ background: `linear-gradient(to right, ${bgColor}, ${fontColor})` }} />
-        </div>
-      </div>
+      <Separator />
+      <SectionColorFields section={section} />
     </div>
   );
 }
@@ -799,6 +638,98 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
       {children}
+    </div>
+  );
+}
+
+// --- Member Photos Field ---
+
+const MAX_MEMBER_PHOTOS = 4;
+
+/** Resolve the effective photo URLs for a member (backward compat). */
+export function getMemberPhotos(member: { photoUrl?: string; photoUrls?: string[] }): string[] {
+  if (member.photoUrls && member.photoUrls.length > 0) {
+    return member.photoUrls;
+  }
+  if (member.photoUrl) {
+    return [member.photoUrl];
+  }
+  return [];
+}
+
+function MemberPhotosField({
+  member,
+  sectionId,
+  onUpdate,
+}: {
+  member: AppreciationMember;
+  sectionId: string;
+  onUpdate: (sectionId: string, memberId: string, data: Partial<AppreciationMember>) => void;
+}) {
+  const photos = getMemberPhotos(member);
+  const canAdd = photos.length < MAX_MEMBER_PHOTOS;
+
+  const syncPhotos = useCallback(
+    (newPhotos: string[]) => {
+      onUpdate(sectionId, member.id, {
+        photoUrls: newPhotos,
+        photoUrl: newPhotos[0] || '',
+      });
+    },
+    [sectionId, member.id, onUpdate],
+  );
+
+  const addPhoto = useCallback(
+    (url: string) => {
+      if (photos.length >= MAX_MEMBER_PHOTOS) return;
+      syncPhotos([...photos, url]);
+    },
+    [photos, syncPhotos],
+  );
+
+  const removePhoto = useCallback(
+    (idx: number) => {
+      syncPhotos(photos.filter((_, i) => i !== idx));
+    },
+    [photos, syncPhotos],
+  );
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs">Photos ({photos.length}/{MAX_MEMBER_PHOTOS})</Label>
+      </div>
+
+      {/* Photo thumbnails row */}
+      {photos.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {photos.map((url, idx) => (
+            <div key={idx} className="relative group shrink-0">
+              <img
+                src={url}
+                alt={`Photo ${idx + 1}`}
+                className="w-14 h-14 object-cover rounded-lg border border-border"
+              />
+              <button
+                type="button"
+                onClick={() => removePhoto(idx)}
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-destructive text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add photo (reuse ImageUpload for a new slot) */}
+      {canAdd && (
+        <ImageUpload
+          value=""
+          onChange={(url) => { if (url) addPhoto(url); }}
+          aspectLabel={photos.length === 0 ? 'Square' : `Add photo (${photos.length}/${MAX_MEMBER_PHOTOS})`}
+        />
+      )}
     </div>
   );
 }

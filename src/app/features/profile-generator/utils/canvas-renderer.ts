@@ -149,6 +149,26 @@ function buildFilterString(adj: ImageAdjustments): string {
   return parts.length ? parts.join(' ') : 'none';
 }
 
+// ─── Create a linear gradient for a layer ────────────────
+function createLayerGradient(
+  ctx: CanvasRenderingContext2D,
+  layer: EditorLayer,
+): CanvasGradient {
+  const angle = (layer.gradientAngle ?? 180) * (Math.PI / 180);
+  const cx = layer.x + layer.width / 2;
+  const cy = layer.y + layer.height / 2;
+  // Half-diagonal length ensures gradient covers the full rectangle
+  const halfDiag = Math.sqrt(layer.width ** 2 + layer.height ** 2) / 2;
+  const x0 = cx - Math.sin(angle) * halfDiag;
+  const y0 = cy - Math.cos(angle) * halfDiag;
+  const x1 = cx + Math.sin(angle) * halfDiag;
+  const y1 = cy + Math.cos(angle) * halfDiag;
+  const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+  grad.addColorStop(0, layer.gradientFrom || '#667eea');
+  grad.addColorStop(1, layer.gradientTo || '#764ba2');
+  return grad;
+}
+
 // ─── Draw a single layer ─────────────────────────────────
 function drawLayer(
   ctx: CanvasRenderingContext2D,
@@ -170,7 +190,11 @@ function drawLayer(
   switch (layer.type) {
     case 'background':
     case 'foreground': {
-      ctx.fillStyle = layer.fill || '#cccccc';
+      if (layer.fillType === 'gradient') {
+        ctx.fillStyle = createLayerGradient(ctx, layer);
+      } else {
+        ctx.fillStyle = layer.fill || '#cccccc';
+      }
       ctx.fillRect(layer.x, layer.y, layer.width, layer.height);
       break;
     }

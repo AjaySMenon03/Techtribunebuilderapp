@@ -1,6 +1,8 @@
 import type { Section } from '../../lib/editor-types';
 import type { ThemeConfig } from '../../lib/types';
 import { PROJECT_STATUS_OPTIONS, SECTION_TYPE_LABELS } from '../../lib/editor-types';
+import { useEditorStore } from '../../lib/editor-store';
+import { getMemberPhotos } from './section-settings-panel';
 import { UserCircle, Heart, Smile, Linkedin, Instagram, Facebook, Globe } from 'lucide-react';
 
 const HEADING_FONT = "'Libre Caslon Text', serif";
@@ -15,14 +17,14 @@ function isDarkBackground(hex: string): boolean {
   return luminance < 0.45;
 }
 
-function getSecondaryTextColor(bgColor: string, fontColor: string): string {
+function getSecondaryTextColor(bgColor: string, _fontColor: string): string {
   if (isDarkBackground(bgColor)) {
     return 'rgba(255,255,255,0.55)';
   }
   return '#6b7280';
 }
 
-function getAnswerTextColor(bgColor: string, fontColor: string): string {
+function getAnswerTextColor(bgColor: string, _fontColor: string): string {
   if (isDarkBackground(bgColor)) {
     return 'rgba(255,255,255,0.7)';
   }
@@ -71,7 +73,7 @@ export function SectionPreview({ section, theme, selected, onClick }: SectionPre
       ) : section.baseType === 'divider' ? (
         <DividerPreview theme={theme} />
       ) : (
-        <div style={{ backgroundColor: sectionBg, color: sectionColor }} className="p-6">
+        <div style={{ backgroundColor: sectionBg, color: sectionColor, padding: section.data.padding || undefined }} className={section.data.padding ? '' : 'p-6'}>
           {section.baseType === 'project_update' ? (
             <ProjectUpdateHeading
               heading={heading}
@@ -95,7 +97,7 @@ export function SectionPreview({ section, theme, selected, onClick }: SectionPre
 function SectionHeading({ heading, accent }: { heading: string; accent: string }) {
   return (
     <div className="mb-4">
-      <h2 className="text-lg font-bold" style={{ color: accent, fontFamily: HEADING_FONT }}>{heading}</h2>
+      <h2 style={{ fontSize: '18px', fontWeight: 700, color: accent, fontFamily: HEADING_FONT, margin: 0 }}>{heading}</h2>
     </div>
   );
 }
@@ -104,11 +106,19 @@ function ProjectUpdateHeading({ heading, accent, status }: { heading: string; ac
   const projectStatus = PROJECT_STATUS_OPTIONS.find((s) => s.value === status);
   return (
     <div className="mb-4 flex items-center justify-between">
-      <h2 className="text-lg font-bold" style={{ color: accent, fontFamily: HEADING_FONT }}>{heading}</h2>
+      <h2 style={{ fontSize: '18px', fontWeight: 700, color: accent, fontFamily: HEADING_FONT, margin: 0 }}>{heading}</h2>
       {projectStatus && (
         <span
-          className="text-xs font-medium px-2 py-0.5 rounded-full text-white whitespace-nowrap ml-3"
-          style={{ backgroundColor: projectStatus.color }}
+          style={{
+            fontSize: '12px',
+            fontWeight: 500,
+            padding: '2px 10px',
+            borderRadius: '9999px',
+            color: '#ffffff',
+            backgroundColor: projectStatus.color,
+            whiteSpace: 'nowrap',
+            marginLeft: '12px',
+          }}
         >
           {projectStatus.label}
         </span>
@@ -117,37 +127,70 @@ function ProjectUpdateHeading({ heading, accent, status }: { heading: string; ac
   );
 }
 
+// ────────────────────────────────────────────────────
+// HEADER — matches email renderEmailHeader exactly
+// Desktop: flex row — 25% logo | flex title | 25% subtitle
+// Mobile: stacked center
+// ────────────────────────────────────────────────────
+
 function HeaderPreview({ data, theme }: { data: any; theme: ThemeConfig }) {
   const bgColor = data.bgColor || '#f4efe5';
   const fontColor = data.fontColor || '#000000';
-  return (
-    <div style={{ backgroundColor: bgColor, color: fontColor }}>
-      {/* Top bar: Logo | Title | Subtitle */}
-      <div className="flex items-center px-5 py-4">
-        {/* Left: Logo */}
-        <div className="w-1/4 flex items-center">
+  const previewMode = useEditorStore((s) => s.previewMode);
+  const isMobile = previewMode === 'mobile';
+
+  if (isMobile) {
+    return (
+      <div style={{ backgroundColor: bgColor, color: fontColor }}>
+        <div style={{ textAlign: 'center', padding: '8px 16px' }}>
           {data.logoUrl ? (
-            <img src={data.logoUrl} alt="Logo" className="h-8 object-contain" />
+            <img src={data.logoUrl} alt="Logo" style={{ height: '32px', objectFit: 'contain', display: 'block', margin: '0 auto' }} />
           ) : (
-            <div className="h-8" />
+            <div style={{ height: '32px' }} />
           )}
         </div>
-        {/* Center: Title */}
-        <div className="flex-1 text-center">
-          <h1 className="font-bold leading-tight" style={{ fontFamily: HEADING_FONT, fontSize: '2rem' }}>{data.title || 'Newsletter Title'}</h1>
+        <div style={{ textAlign: 'center', padding: '8px 16px' }}>
+          <h1 style={{ fontFamily: HEADING_FONT, fontSize: '1.5rem', fontWeight: 700, margin: 0, lineHeight: 1.2 }}>{data.title || 'Newsletter Title'}</h1>
         </div>
-        {/* Right: Subtitle */}
-        <div className="w-1/4 text-right">
-          <p className="text-xs opacity-80 leading-tight">{data.subtitle || 'Subtitle'}</p>
+        <div style={{ textAlign: 'center', padding: '0 16px 8px' }}>
+          <p style={{ fontSize: '12px', opacity: 0.8, margin: 0, lineHeight: 1.3 }}>{data.subtitle || 'Subtitle'}</p>
+        </div>
+        {data.bannerUrl && (
+          <img src={data.bannerUrl} alt="Banner" style={{ width: '100%', maxHeight: '160px', objectFit: 'cover', display: 'block' }} />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ backgroundColor: bgColor, color: fontColor }}>
+      <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px' }}>
+        <div style={{ width: '25%', display: 'flex', alignItems: 'center' }}>
+          {data.logoUrl ? (
+            <img src={data.logoUrl} alt="Logo" style={{ height: '32px', objectFit: 'contain', display: 'block', maxWidth: '100%' }} />
+          ) : (
+            <div style={{ height: '32px' }} />
+          )}
+        </div>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <h1 style={{ fontFamily: HEADING_FONT, fontSize: '2rem', fontWeight: 700, margin: 0, lineHeight: 1.2 }}>{data.title || 'Newsletter Title'}</h1>
+        </div>
+        <div style={{ width: '25%', textAlign: 'right' }}>
+          <p style={{ fontSize: '12px', opacity: 0.8, margin: 0, lineHeight: 1.3 }}>{data.subtitle || 'Subtitle'}</p>
         </div>
       </div>
-      {/* Banner: full width, flush to top bar */}
       {data.bannerUrl && (
-        <img src={data.bannerUrl} alt="Banner" className="w-full max-h-40 object-cover block" />
+        <img src={data.bannerUrl} alt="Banner" style={{ width: '100%', maxHeight: '160px', objectFit: 'cover', display: 'block' }} />
       )}
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────
+// MEET THE ENGINEER — matches email renderEmailMeetEngineer
+// Desktop: 25% photo column | 75% Q&A column
+// Mobile: stacked, photo 100px
+// ────────────────────────────────────────────────────
 
 function MeetEngineerPreview({ data, theme }: { data: any; theme: ThemeConfig }) {
   const qna: Array<{ id: string; question: string; answer: string }> = data.qna || [];
@@ -156,62 +199,90 @@ function MeetEngineerPreview({ data, theme }: { data: any; theme: ThemeConfig })
   const roleColor = getSecondaryTextColor(bgColor, fontColor);
   const answerColor = getAnswerTextColor(bgColor, fontColor);
   const placeholderBg = getPlaceholderBg(bgColor);
+  const previewMode = useEditorStore((s) => s.previewMode);
+  const isMobile = previewMode === 'mobile';
+
+  const photoSize = isMobile ? 100 : 150;
+
   return (
     <div>
-      {/* Grid: 4 cols on desktop, single col on mobile */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
+      <div style={{
+        display: isMobile ? 'block' : 'grid',
+        gridTemplateColumns: isMobile ? undefined : '25% 1fr',
+        gap: '24px',
+      }}>
         {/* Left Column — Profile */}
-        <div className="sm:col-span-1 flex flex-col items-start gap-4">
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: isMobile ? 'flex-start' : 'flex-start',
+          gap: '16px',
+          marginBottom: isMobile ? '16px' : undefined,
+        }}>
           {data.photoUrl ? (
             <img
               src={data.photoUrl}
               alt={data.name}
-              className="object-cover w-[100px] sm:w-[150px] h-auto aspect-square"
-              style={{ borderRadius: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+              style={{
+                width: `${photoSize}px`,
+                height: `${photoSize}px`,
+                objectFit: 'cover',
+                borderRadius: '15px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                display: 'block',
+              }}
             />
           ) : (
             <div
-              className="flex items-center justify-center w-[100px] sm:w-[150px] aspect-square"
-              style={{ borderRadius: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', backgroundColor: placeholderBg }}
+              style={{
+                width: `${photoSize}px`,
+                height: `${photoSize}px`,
+                borderRadius: '15px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                backgroundColor: placeholderBg,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              <UserCircle className="w-12 h-12" style={{ color: roleColor }} />
+              <UserCircle style={{ width: '48px', height: '48px', color: roleColor }} />
             </div>
           )}
           <div>
-            <h3 className="font-bold leading-snug" style={{ fontSize: '16px', color: fontColor }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0', lineHeight: 1.3, color: fontColor }}>
               {data.name || 'Engineer Name'}
             </h3>
-            <p className="text-sm mt-0.5" style={{ color: roleColor }}>
+            <p style={{ fontSize: '14px', margin: '2px 0 0', color: roleColor }}>
               {data.role || 'Role'}
             </p>
           </div>
         </div>
 
         {/* Right Column — Q&A */}
-        <div className="sm:col-span-3 flex flex-col gap-5">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {qna.length > 0 ? (
             qna.map((item) => (
               <div key={item.id}>
-                <p className="font-bold text-sm mb-1" style={{ color: fontColor, lineHeight: 1.6 }}>
+                <p style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 4px', lineHeight: 1.6, color: fontColor }}>
                   Q: {item.question || 'Question?'}
                 </p>
-                <p className="text-sm" style={{ color: answerColor, lineHeight: 1.7 }}>
+                <p style={{ fontSize: '14px', margin: 0, lineHeight: 1.7, color: answerColor }}>
                   A: {item.answer || 'Answer...'}
                 </p>
               </div>
             ))
           ) : (
-            <p className="text-sm italic opacity-50">Add Q&A items in the settings panel</p>
+            <p style={{ fontSize: '14px', fontStyle: 'italic', opacity: 0.5 }}>Add Q&A items in the settings panel</p>
           )}
         </div>
       </div>
 
       {data.funFacts?.length > 0 && (
-        <div className="mt-5">
-          <p className="text-xs font-semibold uppercase tracking-wide opacity-60 mb-1">Fun Facts</p>
-          <ul className="text-sm list-disc list-inside space-y-0.5 opacity-80">
+        <div style={{ marginTop: '20px' }}>
+          <p style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.6, marginBottom: '4px' }}>Fun Facts</p>
+          <ul style={{ fontSize: '14px', listStyleType: 'disc', listStylePosition: 'inside', opacity: 0.8, margin: 0, padding: 0 }}>
             {data.funFacts.map((f: string, i: number) => (
-              <li key={i}>{f}</li>
+              <li key={i} style={{ marginBottom: '2px' }}>{f}</li>
             ))}
           </ul>
         </div>
@@ -220,54 +291,76 @@ function MeetEngineerPreview({ data, theme }: { data: any; theme: ThemeConfig })
   );
 }
 
+// ───────────────────────────────────────────────────
+// APPRECIATION — matches email renderEmailAppreciation
+// Grid with membersPerRow columns, same card sizing
+// ────────────────────────────────────────────────────
+
 function AppreciationPreview({ data, theme }: { data: any; theme: ThemeConfig }) {
   const members = data.members || [];
   const membersPerRow = Math.min(Math.max(data.membersPerRow || 2, 1), 3);
   const fontColor = data.fontColor || '#000000';
   const bgColor = data.bgColor || '#f4efe5';
+
   if (members.length === 0) {
-    return <p className="text-sm opacity-50 italic text-center py-4">No members added yet</p>;
+    return <p style={{ fontSize: '14px', opacity: 0.5, fontStyle: 'italic', textAlign: 'center', padding: '16px 0' }}>No members added yet</p>;
   }
   return (
     <div
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${membersPerRow}, minmax(0, 1fr))`,
-        gap: 'calc(var(--spacing)*2)',
+        gap: '8px',
       }}
     >
       {members.map((m: any) => {
         const cardBg = m.cardColor || '#e9e0cc';
         const cardPlaceholderBg = getPlaceholderBg(cardBg);
         const cardSecondary = getSecondaryTextColor(cardBg, fontColor);
+        const photos = getMemberPhotos(m);
         return (
           <div
             key={m.id}
-            className="p-3 text-center min-w-0 overflow-hidden"
             style={{
+              padding: '12px',
+              textAlign: 'center',
               backgroundColor: cardBg,
               borderRadius: '15px',
               border: `1px solid ${isDarkBackground(bgColor) ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+              minWidth: 0,
+              overflow: 'hidden',
             }}
           >
-            {m.photoUrl ? (
-              <img
-                src={m.photoUrl}
-                alt={m.name}
-                className="w-14 h-14 object-cover mx-auto mb-2"
-                style={{ borderRadius: '15px' }}
-              />
+            {photos.length > 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
+                {photos.map((url, idx) => (
+                  <img
+                    key={idx}
+                    src={url}
+                    alt={`${m.name || 'Member'} ${idx + 1}`}
+                    style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '15px', display: 'block' }}
+                  />
+                ))}
+              </div>
             ) : (
               <div
-                className="w-14 h-14 mx-auto mb-2 flex items-center justify-center"
-                style={{ borderRadius: '15px', backgroundColor: cardPlaceholderBg }}
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '15px',
+                  backgroundColor: cardPlaceholderBg,
+                  margin: '0 auto 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                <Heart className="w-6 h-6" style={{ color: cardSecondary }} />
+                <Heart style={{ width: '24px', height: '24px', color: cardSecondary }} />
               </div>
             )}
-            <p className="text-sm font-semibold break-words" style={{ color: fontColor }}>{m.name || 'Name'}</p>
+            <p style={{ fontSize: '14px', fontWeight: 600, margin: 0, color: fontColor, wordWrap: 'break-word', overflowWrap: 'break-word' }}>{m.name || 'Name'}</p>
             {m.message && (
-              <div className="text-xs opacity-70 mt-1 break-words overflow-hidden" style={{ color: fontColor }} dangerouslySetInnerHTML={{ __html: m.message }} />
+              <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px', color: fontColor, wordWrap: 'break-word', overflowWrap: 'break-word' }} dangerouslySetInnerHTML={{ __html: m.message }} />
             )}
           </div>
         );
@@ -276,10 +369,15 @@ function AppreciationPreview({ data, theme }: { data: any; theme: ThemeConfig })
   );
 }
 
+// ────────────────────────────────────────────────────
+// PROJECT UPDATE — matches email renderEmailProjectUpdate
+// ────────────────────────────────────────────────────
+
 function ProjectUpdatePreview({ data, theme }: { data: any; theme: ThemeConfig }) {
-  const columns: number = Math.min(Math.max(data.columns || 1, 1), 3);
+  const previewMode = useEditorStore((s) => s.previewMode);
+  const isMobile = previewMode === 'mobile';
+  const columns: number = isMobile ? 1 : Math.min(Math.max(data.columns || 1, 1), 3);
   const fontColor = data.fontColor || '#000000';
-  const bgColor = data.bgColor || '#f4efe5';
   // Support legacy contentColumns array or single content field
   const content: string = data.content
     || (data.contentColumns ? data.contentColumns.filter(Boolean).join('') : '')
@@ -288,22 +386,38 @@ function ProjectUpdatePreview({ data, theme }: { data: any; theme: ThemeConfig }
   return (
     <div>
       <div
-        className="text-sm leading-relaxed break-words overflow-hidden max-w-none [&_p]:my-0.5 [&_li]:my-0 [&_ul]:my-1 [&_ol]:my-1 [&_ul]:pl-5 [&_ul]:list-disc [&_ol]:pl-5 [&_ol]:list-decimal [&_a]:underline"
+        className="project-update-content"
         style={{
-          columnCount: columns,
-          columnGap: 'calc(var(--spacing)*3)',
+          fontSize: '14px',
+          lineHeight: 1.625,
           color: fontColor,
+          columnCount: columns,
+          columnGap: '12px',
+          wordWrap: 'break-word',
+          overflowWrap: 'break-word',
+          overflow: 'hidden',
         }}
         dangerouslySetInnerHTML={{ __html: content }}
       />
+      <style>{`
+        .project-update-content p { margin: 2px 0; }
+        .project-update-content ul { list-style-type: disc; padding-left: 20px; margin: 4px 0; }
+        .project-update-content ol { list-style-type: decimal; padding-left: 20px; margin: 4px 0; }
+        .project-update-content li { margin: 0; }
+        .project-update-content a { text-decoration: underline; }
+      `}</style>
     </div>
   );
 }
 
+// ────────────────────────────────────────────────────
+// FOUNDER FOCUS — matches email renderEmailFounderFocus
+// ────────────────────────────────────────────────────
+
 function FounderFocusPreview({ data, theme }: { data: any; theme: ThemeConfig }) {
   const fontColor = data.fontColor || '#000000';
   const bgColor = data.bgColor || '#f4efe5';
-  const textAlign = data.textAlign || 'center';
+  const textAlign = (data.textAlign || 'center') as 'left' | 'center' | 'right';
   return (
     <div
       style={{
@@ -314,37 +428,46 @@ function FounderFocusPreview({ data, theme }: { data: any; theme: ThemeConfig })
       }}
     >
       {data.quote ? (
-        <p className="italic" style={{ color: fontColor, fontSize: '20px', fontWeight: 300, fontFamily: "'Inter', sans-serif", lineHeight: 1.3 }}>
+        <p style={{ color: fontColor, fontSize: '20px', fontWeight: 300, fontFamily: "'Inter', sans-serif", fontStyle: 'italic', lineHeight: 1.3, margin: '0 0 12px' }}>
           "{data.quote}"
         </p>
       ) : (
-        <p className="opacity-50 italic py-2" style={{ fontSize: '1.5rem' }}>Add a quote...</p>
+        <p style={{ fontSize: '1.5rem', opacity: 0.5, fontStyle: 'italic', padding: '8px 0' }}>Add a quote...</p>
       )}
-      <div className="mt-3">
-        <p className="text-sm font-bold" style={{ color: fontColor }}>{data.name || 'Founder Name'}</p>
-        <p className="text-xs opacity-70">{data.designation || 'Designation'}</p>
+      <div>
+        <p style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: fontColor }}>{data.name || 'Founder Name'}</p>
+        <p style={{ fontSize: '12px', opacity: 0.7, margin: '2px 0 0' }}>{data.designation || 'Designation'}</p>
       </div>
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────
+// COMIC — matches email renderEmailComic
+// ────────────────────────────────────────────────────
 
 function ComicPreview({ data, theme }: { data: any; theme: ThemeConfig }) {
   const bgColor = data.bgColor || '#f4efe5';
   const fontColor = data.fontColor || '#000000';
   const placeholderBg = getPlaceholderBg(bgColor);
   return (
-    <div className="text-center">
+    <div style={{ textAlign: 'center' }}>
       {data.imageUrl ? (
-        <img src={data.imageUrl} alt="Comic" className="max-w-full mx-auto rounded-lg mb-2" />
+        <img src={data.imageUrl} alt="Comic" style={{ maxWidth: '100%', borderRadius: '8px', marginBottom: '8px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
       ) : (
-        <div className="w-full h-48 rounded-lg flex items-center justify-center mb-2" style={{ backgroundColor: placeholderBg }}>
-          <Smile className="w-12 h-12" style={{ color: getSecondaryTextColor(bgColor, fontColor) }} />
+        <div style={{ width: '100%', height: '192px', borderRadius: '8px', backgroundColor: placeholderBg, marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Smile style={{ width: '48px', height: '48px', color: getSecondaryTextColor(bgColor, fontColor) }} />
         </div>
       )}
-      {data.caption && <p className="text-sm italic opacity-70" style={{ color: fontColor }}>{data.caption}</p>}
+      {data.caption && <p style={{ fontSize: '14px', fontStyle: 'italic', opacity: 0.7, margin: 0, color: fontColor }}>{data.caption}</p>}
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────
+// FOOTER — matches email renderEmailFooter
+// Padding: 20px, center aligned
+// ────────────────────────────────────────────────────
 
 function FooterPreview({ data, theme }: { data: any; theme: ThemeConfig }) {
   const bgColor = data.bgColor || '#f4efe5';
@@ -352,28 +475,26 @@ function FooterPreview({ data, theme }: { data: any; theme: ThemeConfig }) {
 
   const getSocialIcon = (platform: string) => {
     const p = platform.toLowerCase();
-    if (p.includes('linkedin')) return <Linkedin className="w-4 h-4" />;
-    if (p.includes('instagram')) return <Instagram className="w-4 h-4" />;
-    if (p.includes('facebook')) return <Facebook className="w-4 h-4" />;
-    return <Globe className="w-4 h-4" />;
+    if (p.includes('linkedin')) return <Linkedin style={{ width: '16px', height: '16px' }} />;
+    if (p.includes('instagram')) return <Instagram style={{ width: '16px', height: '16px' }} />;
+    if (p.includes('facebook')) return <Facebook style={{ width: '16px', height: '16px' }} />;
+    return <Globe style={{ width: '16px', height: '16px' }} />;
   };
 
   return (
     <div
-      className="p-5 text-center text-sm"
-      style={{ backgroundColor: bgColor, color: fontColor }}
+      style={{ padding: '20px', textAlign: 'center', fontSize: '14px', backgroundColor: bgColor, color: fontColor }}
     >
-      <div className="leading-relaxed opacity-70 mb-3" dangerouslySetInnerHTML={{ __html: data.content || '<p>Visit the website: www.electronikmedia.com</p>' }} />
+      <div style={{ lineHeight: 1.625, opacity: 0.7, marginBottom: '12px' }} dangerouslySetInnerHTML={{ __html: data.content || '<p>Visit the website: www.electronikmedia.com</p>' }} />
       {data.socialLinks?.length > 0 && (
-        <div className="flex items-center justify-center gap-4 mt-2">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginTop: '8px' }}>
           {data.socialLinks.map((link: any, i: number) => (
             <a
-              key={i}
+              key={link.id || i}
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs font-medium opacity-60 hover:opacity-100 transition-opacity"
-              style={{ color: fontColor }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 500, opacity: 0.6, color: fontColor, textDecoration: 'underline' }}
             >
               {getSocialIcon(link.platform)}
               {link.platform}
@@ -385,13 +506,17 @@ function FooterPreview({ data, theme }: { data: any; theme: ThemeConfig }) {
   );
 }
 
+// ───────────────────────────────────────────────────
+// DIVIDER — matches email renderEmailDivider
+// ────────────────────────────────────────────────────
+
 function DividerPreview({ theme }: { theme: ThemeConfig }) {
   return (
     <div style={{ padding: '10px 20px' }}>
       <hr
         style={{
           border: 'none',
-          borderTop: `1px solid ${theme.accent_color}30`,
+          borderTop: '1px solid rgba(0,0,0,0.15)',
           margin: 0,
         }}
       />

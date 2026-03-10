@@ -6,6 +6,8 @@ import { EditorPage } from './pages/editor';
 import { ArchivePage } from './pages/archive';
 import { SettingsPage } from './pages/settings';
 import { ProfileListPage, ProfileEditorPage } from './features/profile-generator';
+import { CanvasStudioPage } from './pages/canvas-studio';
+import { CanvasStudioEditorPage } from './pages/canvas-studio-editor';
 
 export const router = createBrowserRouter([
   {
@@ -47,6 +49,14 @@ export const router = createBrowserRouter([
       {
         path: 'profile-generator/:id',
         Component: ProfileEditorPage,
+      },
+      {
+        path: 'canvas-studio',
+        Component: CanvasStudioPage,
+      },
+      {
+        path: 'canvas-studio/:id',
+        Component: CanvasStudioEditorPage,
       },
     ],
   },

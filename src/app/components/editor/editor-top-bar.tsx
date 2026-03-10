@@ -45,7 +45,7 @@ interface EditorTopBarProps {
 }
 
 const previewModes: { value: PreviewMode; label: string; icon: React.ReactNode }[] = [
-  { value: 'desktop', label: 'Desktop (600px)', icon: <Monitor className="w-4 h-4" /> },
+  { value: 'desktop', label: 'Desktop (700px)', icon: <Monitor className="w-4 h-4" /> },
   { value: 'mobile', label: 'Mobile (375px)', icon: <Smartphone className="w-4 h-4" /> },
   { value: 'a4', label: 'A4 (595px)', icon: <FileText className="w-4 h-4" /> },
 ];

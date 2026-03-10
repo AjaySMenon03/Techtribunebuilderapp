@@ -31,7 +31,7 @@ function themeVars(theme: ThemeConfig, darkMode: boolean): CssThemeVars {
   };
 }
 
-export function generateWebCss(theme: ThemeConfig, darkMode: boolean, options?: { skipFontImports?: boolean }): string {
+export function generateWebCss(theme: ThemeConfig, darkMode: boolean, options?: { skipFontImports?: boolean; a4Mode?: boolean }): string {
   const v = themeVars(theme, darkMode);
   const fontStack = `'${v.fontFamily}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`;
   const dividerColor = darkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
@@ -68,7 +68,7 @@ body {
 
 /* Container */
 .newsletter-container {
-  max-width: 600px;
+  ${options?.a4Mode ? 'width: 100%;' : 'max-width: 600px;'}
   margin: 0 auto;
   background-color: ${v.bgColor};
 }

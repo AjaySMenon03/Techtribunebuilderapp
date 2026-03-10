@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Section, SectionBaseType, PreviewMode, AppreciationMember } from './editor-types';
+import type { Section, SectionBaseType, PreviewMode, AppreciationMember, MobileOverrides } from './editor-types';
 import { createSection, sanitizeSections } from './editor-types';
 
 // --- Collab delegate: avoids circular imports ---
@@ -61,6 +61,11 @@ interface EditorState {
 
   // Collab
   setCollabActive: (active: boolean) => void;
+
+  // Mobile overrides
+  updateMobileOverride: (id: string, overrides: Partial<MobileOverrides>) => void;
+  clearMobileOverride: (id: string, key: keyof MobileOverrides) => void;
+  clearAllMobileOverrides: (id: string) => void;
 
   // Get sanitized sections for saving
   getSanitizedSections: () => Section[];
@@ -184,6 +189,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       id: crypto.randomUUID(),
       name: '',
       photoUrl: '',
+      photoUrls: [],
       message: '',
       cardColor: '#e9e0cc',
     };
@@ -303,6 +309,59 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   markDirty: () => set({ dirty: true }),
   markClean: (savedAt) => set({ dirty: false, lastSavedAt: savedAt }),
+
+  // Mobile overrides
+  updateMobileOverride: (id, overrides) => {
+    const { collabActive, sections } = get();
+    const section = sections.find((s) => s.id === id);
+    if (!section) return;
+    const merged = { ...(section.mobileOverrides || {}), ...overrides };
+    if (collabActive && _collabDelegate) {
+      _collabDelegate.yjsUpdateSection(id, { mobileOverrides: merged });
+      set({ dirty: true });
+      return;
+    }
+    set((s) => ({
+      sections: s.sections.map((sec) =>
+        sec.id === id ? { ...sec, mobileOverrides: merged } : sec,
+      ),
+      dirty: true,
+    }));
+  },
+
+  clearMobileOverride: (id, key) => {
+    const { collabActive, sections } = get();
+    const section = sections.find((s) => s.id === id);
+    if (!section) return;
+    const current = { ...(section.mobileOverrides || {}) };
+    delete current[key];
+    if (collabActive && _collabDelegate) {
+      _collabDelegate.yjsUpdateSection(id, { mobileOverrides: current });
+      set({ dirty: true });
+      return;
+    }
+    set((s) => ({
+      sections: s.sections.map((sec) =>
+        sec.id === id ? { ...sec, mobileOverrides: current } : sec,
+      ),
+      dirty: true,
+    }));
+  },
+
+  clearAllMobileOverrides: (id) => {
+    const { collabActive } = get();
+    if (collabActive && _collabDelegate) {
+      _collabDelegate.yjsUpdateSection(id, { mobileOverrides: undefined });
+      set({ dirty: true });
+      return;
+    }
+    set((s) => ({
+      sections: s.sections.map((sec) =>
+        sec.id === id ? { ...sec, mobileOverrides: undefined } : sec,
+      ),
+      dirty: true,
+    }));
+  },
 
   getSanitizedSections: () => sanitizeSections(get().sections),
 }));

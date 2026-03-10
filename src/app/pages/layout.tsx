@@ -29,14 +29,17 @@ export function AppLayout() {
 
   // Editor pages get their own full-width layout (no sidebar)
   const isEditorPage = location.pathname.startsWith('/editor/') || location.pathname.startsWith('/profile-generator/editor');
+  const isCanvasEditor = /^\/canvas-studio\/[^/]+/.test(location.pathname);
+  const isCanvasPage = location.pathname === '/canvas-studio';
+  const isFullPage = isEditorPage || isCanvasPage || isCanvasEditor;
 
   return (
     <AuthGuard>
       <div className="flex h-screen overflow-hidden bg-background">
-        <SidebarNav />
-        <main className="flex-1 overflow-auto min-w-0">
+        {!isCanvasEditor && <SidebarNav />}
+        <main className={`flex-1 min-w-0 ${(isCanvasPage || isCanvasEditor) ? 'overflow-hidden' : 'overflow-auto'}`}>
           {/* On mobile non-editor pages, add top padding for the hamburger button */}
-          <div className={isEditorPage ? 'h-full' : 'h-full md:pt-0 pt-14'}>
+          <div className={isFullPage ? 'h-full' : 'h-full md:pt-0 pt-14'}>
             <ErrorBoundary
               fallbackTitle="Page Error"
               fallbackMessage="This page encountered an error. Try navigating back or refreshing."

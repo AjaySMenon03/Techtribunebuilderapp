@@ -65,7 +65,7 @@ export function LoginPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
             <Newspaper className="w-7 h-7 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold">Tech Tribune Builder</h1>
+          <h1 className="text-2xl font-bold">EM Make</h1>
           <p className="text-muted-foreground mt-1">
             {isSignUp ? 'Create your account' : 'Sign in to your workspace'}
           </p>

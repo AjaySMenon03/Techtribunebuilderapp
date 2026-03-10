@@ -107,6 +107,10 @@ export interface EditorLayer {
 
   // Background / Foreground
   fill?: string;
+  fillType?: 'solid' | 'gradient';
+  gradientFrom?: string;
+  gradientTo?: string;
+  gradientAngle?: number; // degrees, 0 = top-to-bottom, 90 = left-to-right
 
   // Image
   src?: string;

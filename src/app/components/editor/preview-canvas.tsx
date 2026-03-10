@@ -1,3 +1,4 @@
+import { getEffectiveSectionData } from '../../lib/use-mobile-aware-data';
 import { useEditorStore } from '../../lib/editor-store';
 import { useCollabStore } from '../../lib/collab-store';
 import { PREVIEW_WIDTHS, applyDarkModeToSection } from '../../lib/editor-types';
@@ -16,6 +17,7 @@ export function PreviewCanvas({ theme, className }: PreviewCanvasProps) {
   const remoteUsers = useCollabStore((s) => s.remoteUsers);
 
   const width = PREVIEW_WIDTHS[previewMode];
+  const isMobile = previewMode === 'mobile';
 
   // Apply dark mode overrides
   const effectiveTheme: ThemeConfig = darkModePreview
@@ -28,7 +30,12 @@ export function PreviewCanvas({ theme, className }: PreviewCanvasProps) {
       }
     : theme;
 
-  const visibleSections = sections.filter((s) => s.visible);
+  const visibleSections = sections.filter((s) => {
+    if (!s.visible) return false;
+    // In mobile mode, respect mobile-specific hidden override
+    if (isMobile && s.mobileOverrides?.hidden) return false;
+    return true;
+  });
 
   // Build map of sectionId → editing users
   const editingUsersMap: Record<string, { name: string; color: string }[]> = {};
@@ -96,7 +103,10 @@ export function PreviewCanvas({ theme, className }: PreviewCanvasProps) {
                       />
                     )}
                     <SectionPreview
-                      section={applyDarkModeToSection(section, darkModePreview)}
+                      section={applyDarkModeToSection(
+                        isMobile ? { ...section, data: getEffectiveSectionData(section, true) } : section,
+                        darkModePreview,
+                      )}
                       theme={effectiveTheme}
                       selected={section.id === selectedSectionId}
                       onClick={() => selectSection(section.id)}

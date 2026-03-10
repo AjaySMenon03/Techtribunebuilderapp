@@ -59,6 +59,7 @@ export interface AppreciationMember {
   id: string;
   name: string;
   photoUrl: string;
+  photoUrls?: string[]; // Multiple photos in a row (max 4)
   message: string; // HTML
   cardColor: string;
 }
@@ -108,11 +109,30 @@ export interface FooterSectionData {
 
 // --- Unified Section Type ---
 
+export interface MobileOverrides {
+  // Colors
+  fontColor?: string;
+  bgColor?: string;
+  // Layout
+  columns?: number;
+  membersPerRow?: number;
+  textAlign?: 'left' | 'center' | 'right';
+  // Typography
+  fontSize?: string;
+  // Spacing
+  padding?: string;
+  // Visibility
+  hidden?: boolean;
+  // Per-member card color overrides (appreciation)
+  memberCardColors?: Record<string, string>;
+}
+
 export interface Section {
   id: string;
   baseType: SectionBaseType;
   visible: boolean;
   data: Record<string, any>;
+  mobileOverrides?: MobileOverrides;
 }
 
 export interface NewsletterContent {
@@ -124,7 +144,7 @@ export interface NewsletterContent {
 export type PreviewMode = 'desktop' | 'mobile' | 'a4';
 
 export const PREVIEW_WIDTHS: Record<PreviewMode, number> = {
-  desktop: 600,
+  desktop: 700,
   mobile: 375,
   a4: 595,
 };

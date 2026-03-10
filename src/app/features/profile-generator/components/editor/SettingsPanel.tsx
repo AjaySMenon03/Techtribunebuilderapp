@@ -13,6 +13,7 @@ import {
   Type,
   Upload,
   FolderOpen,
+  RotateCw,
 } from 'lucide-react';
 import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
@@ -25,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../../../components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '../../../../components/ui/tabs';
 import type { EditorLayer, CanvasConfig } from '../../utils/editor-types';
 import { ImageAdjustmentsPanel } from './ImageAdjustmentsPanel';
 
@@ -276,19 +278,141 @@ export const SettingsPanel = memo(function SettingsPanel({
         {/* Type-specific settings */}
         {(layer.type === 'background' || layer.type === 'foreground') && (
           <Section title="Fill">
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={layer.fill || '#cccccc'}
-                onChange={(e) => update({ fill: e.target.value })}
-                className="w-8 h-8 rounded border border-border cursor-pointer p-0"
-              />
-              <Input
-                value={layer.fill || '#cccccc'}
-                className="h-7 text-xs flex-1"
-                onChange={(e) => update({ fill: e.target.value })}
-              />
-            </div>
+            {/* Solid / Gradient toggle */}
+            <Tabs
+              value={layer.fillType || 'solid'}
+              onValueChange={(v) => update({ fillType: v as 'solid' | 'gradient' })}
+            >
+              <TabsList className="h-7 w-full">
+                <TabsTrigger value="solid" className="h-6 flex-1 text-[11px]">
+                  Solid
+                </TabsTrigger>
+                <TabsTrigger value="gradient" className="h-6 flex-1 text-[11px]">
+                  Gradient
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {(!layer.fillType || layer.fillType === 'solid') ? (
+              /* ── Solid fill ── */
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={layer.fill || '#cccccc'}
+                  onChange={(e) => update({ fill: e.target.value })}
+                  className="w-8 h-8 rounded border border-border cursor-pointer p-0"
+                />
+                <Input
+                  value={layer.fill || '#cccccc'}
+                  className="h-7 text-xs flex-1"
+                  onChange={(e) => update({ fill: e.target.value })}
+                />
+              </div>
+            ) : (
+              /* ── Gradient fill ── */
+              <div className="space-y-3">
+                {/* Color stops */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">From</Label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="color"
+                        value={layer.gradientFrom || '#667eea'}
+                        onChange={(e) => update({ gradientFrom: e.target.value })}
+                        className="w-7 h-7 rounded border border-border cursor-pointer p-0 shrink-0"
+                      />
+                      <Input
+                        value={layer.gradientFrom || '#667eea'}
+                        className="h-7 text-[10px] flex-1"
+                        onChange={(e) => update({ gradientFrom: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">To</Label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="color"
+                        value={layer.gradientTo || '#764ba2'}
+                        onChange={(e) => update({ gradientTo: e.target.value })}
+                        className="w-7 h-7 rounded border border-border cursor-pointer p-0 shrink-0"
+                      />
+                      <Input
+                        value={layer.gradientTo || '#764ba2'}
+                        className="h-7 text-[10px] flex-1"
+                        onChange={(e) => update({ gradientTo: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gradient preview swatch */}
+                <div
+                  className="h-6 rounded-md border border-border"
+                  style={{
+                    background: `linear-gradient(${layer.gradientAngle ?? 180}deg, ${layer.gradientFrom || '#667eea'}, ${layer.gradientTo || '#764ba2'})`,
+                  }}
+                />
+
+                {/* Angle control */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <RotateCw className="w-3 h-3" />
+                      Angle
+                    </Label>
+                    <span className="text-[11px] text-muted-foreground tabular-nums">
+                      {layer.gradientAngle ?? 180}°
+                    </span>
+                  </div>
+                  <Slider
+                    value={[layer.gradientAngle ?? 180]}
+                    min={0}
+                    max={360}
+                    step={1}
+                    onValueChange={([v]) => update({ gradientAngle: v })}
+                  />
+                  {/* Quick angle presets */}
+                  <div className="flex items-center gap-1">
+                    {[
+                      { label: '↓', angle: 180 },
+                      { label: '→', angle: 90 },
+                      { label: '↑', angle: 0 },
+                      { label: '←', angle: 270 },
+                      { label: '↘', angle: 135 },
+                      { label: '↗', angle: 45 },
+                    ].map((preset) => (
+                      <Button
+                        key={preset.angle}
+                        variant={(layer.gradientAngle ?? 180) === preset.angle ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="h-6 w-6 p-0 text-[11px]"
+                        title={`${preset.angle}°`}
+                        onClick={() => update({ gradientAngle: preset.angle })}
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Swap colors */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs h-7"
+                  onClick={() =>
+                    update({
+                      gradientFrom: layer.gradientTo || '#764ba2',
+                      gradientTo: layer.gradientFrom || '#667eea',
+                    })
+                  }
+                >
+                  Swap Colors
+                </Button>
+              </div>
+            )}
           </Section>
         )}
 

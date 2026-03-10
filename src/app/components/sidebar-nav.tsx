@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   IdCard,
+  PenTool,
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { useIsMobile } from './ui/use-mobile';
@@ -17,6 +18,7 @@ import { useIsMobile } from './ui/use-mobile';
 const navItems = [
   { to: '/dashboard', label: 'Newsletter', icon: Newspaper },
   { to: '/profile-generator', label: 'Profile Generator', icon: IdCard },
+  { to: '/canvas-studio', label: 'Canvas Studio', icon: PenTool },
   { to: '/archive', label: 'Archive', icon: Archive },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];

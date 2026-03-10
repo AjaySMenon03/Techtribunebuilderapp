@@ -64,7 +64,8 @@ function renderMeetEngineer(section: Section): string {
   parts.push(`  <div class="section-heading">`);
   parts.push(`    <h2 style="color:${fontColor};">${escapeHtml(SECTION_TYPE_LABELS[section.baseType])}</h2>`);
   parts.push('  </div>');
-  parts.push('  <div class="engineer-grid">');
+  // Use inline grid matching preview: 25% for profile, 1fr for Q&A
+  parts.push('  <div class="engineer-grid" style="display:grid;grid-template-columns:25% 1fr;gap:24px;">');
   // Left column — profile
   parts.push('    <div class="engineer-profile">');
   if (data.photoUrl) {
@@ -127,8 +128,14 @@ function renderAppreciation(section: Section): string {
       const cardDark = isColorDark(cardBg);
       const cardPlaceholderBg = cardDark ? '#374151' : '#e5e7eb';
       parts.push(`    <div class="appreciation-card" style="background-color:${cardBg};border-color:${borderColor};">`);
-      if (m.photoUrl) {
-        parts.push(`      <img src="${escapeHtml(m.photoUrl)}" alt="${escapeHtml(m.name || 'Member')}" class="appreciation-photo" />`);
+      // Support multiple photos (photoUrls array) with fallback to single photoUrl
+      const photos: string[] = (m.photoUrls && m.photoUrls.length > 0) ? m.photoUrls : (m.photoUrl ? [m.photoUrl] : []);
+      if (photos.length > 0) {
+        parts.push(`      <div style="display:flex;justify-content:center;gap:6px;margin-bottom:8px;">`);
+        photos.forEach((url: string) => {
+          parts.push(`        <img src="${escapeHtml(url)}" alt="${escapeHtml(m.name || 'Member')}" class="appreciation-photo" style="margin:0;" />`);
+        });
+        parts.push(`      </div>`);
       } else {
         parts.push(`      <div class="appreciation-placeholder" style="background-color:${cardPlaceholderBg};"></div>`);
       }
