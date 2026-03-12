@@ -332,7 +332,7 @@ function renderEmailProjectUpdate(section: Section, tv: CssThemeVars): string {
   return sectionTable(bgColor, innerContent);
 }
 
-// ───────────────────────────────────────────────────
+// ────────────────────────────────────────────────────
 // COMIC – matches ComicPreview
 // Preview: text-center
 //   Image: max-w-full rounded-lg mb-2
@@ -346,17 +346,27 @@ function renderEmailComic(section: Section, tv: CssThemeVars): string {
   const fontColor = data.fontColor || '#000000';
   const heading = data.heading || 'title';
   const placeholderBg = isColorDark(bgColor) ? '#374151' : '#e5e7eb';
+  const captionPosition = data.captionPosition || 'below';
+  const captionAlign = data.captionAlign || 'center';
+  const sectionTv = { ...tv, textColor: fontColor, cardColor: bgColor, accentColor: fontColor };
+
+  const imageHtml = data.imageUrl
+    ? `<img src="${escapeHtml(data.imageUrl)}" alt="Comic" width="${MAX_WIDTH - 48}" style="max-width:100%;border-radius:8px;margin-bottom:${captionPosition === 'below' ? '8px' : '0'};margin-top:${captionPosition === 'above' ? '8px' : '0'};display:block;" />`
+    : `<div style="width:100%;height:192px;background-color:${placeholderBg};border-radius:8px;margin-bottom:${captionPosition === 'below' ? '8px' : '0'};margin-top:${captionPosition === 'above' ? '8px' : '0'};"></div>`;
+
+  const captionHtml = data.caption
+    ? `<div style="font-size:14px;margin:0;font-family:${EMAIL_FONT_STACK};color:${fontColor};text-align:${captionAlign};">${emailRichText(data.caption, sectionTv)}</div>`
+    : '';
 
   return `
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:${bgColor};">
   <tr>
     <td align="center" style="padding:24px;font-family:${EMAIL_FONT_STACK};color:${fontColor};">
       ${renderEmailSectionHeading(heading, fontColor)}
-      ${data.imageUrl
-        ? `<img src="${escapeHtml(data.imageUrl)}" alt="Comic" width="${MAX_WIDTH - 48}" style="max-width:100%;border-radius:8px;margin-bottom:8px;display:block;" />`
-        : `<div style="width:100%;height:192px;background-color:${placeholderBg};border-radius:8px;margin-bottom:8px;"></div>`
+      ${captionPosition === 'above'
+        ? `${captionHtml}${imageHtml}`
+        : `${imageHtml}${captionHtml}`
       }
-      ${data.caption ? `<p style="font-size:14px;font-style:italic;opacity:0.7;margin:0;font-family:${EMAIL_FONT_STACK};color:${fontColor};">${escapeHtml(data.caption)}</p>` : ''}
     </td>
   </tr>
 </table>`;

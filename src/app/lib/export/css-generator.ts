@@ -313,6 +313,63 @@ body {
   margin-bottom: 0;
 }
 
+.appreciation-card .member-message ul,
+.appreciation-card .member-message ol {
+  margin: 4px 0;
+  padding-left: 20px;
+  text-align: left;
+}
+
+.appreciation-card .member-message ul:last-child,
+.appreciation-card .member-message ol:last-child {
+  margin-bottom: 0;
+}
+
+.appreciation-card .member-message ul {
+  list-style-type: disc;
+}
+
+.appreciation-card .member-message ol {
+  list-style-type: decimal;
+}
+
+.appreciation-card .member-message li {
+  margin: 0 0 2px 0;
+  line-height: 1.5;
+}
+
+.appreciation-card .member-message li:last-child {
+  margin-bottom: 0;
+}
+
+.appreciation-card .member-message li p {
+  margin: 0;
+}
+
+.appreciation-card .member-message a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.appreciation-card .member-message strong {
+  font-weight: 700;
+}
+
+.appreciation-card .member-message em {
+  font-style: italic;
+}
+
+.appreciation-card .member-message u {
+  text-decoration: underline;
+}
+
+.appreciation-card .member-message blockquote {
+  border-left: 2px solid currentColor;
+  padding-left: 12px;
+  margin: 4px 0;
+  opacity: 0.8;
+}
+
 /* Project Update */
 .status-badge {
   font-size: 12px;
@@ -334,7 +391,7 @@ body {
 }
 
 .project-content p {
-  margin: 2px 0;
+  margin: 0 0 8px 0;
 }
 
 .project-content p:last-child {
@@ -343,8 +400,13 @@ body {
 
 .project-content ul,
 .project-content ol {
-  margin: 4px 0;
-  padding-left: 20px;
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.project-content ul:last-child,
+.project-content ol:last-child {
+  margin-bottom: 0;
 }
 
 .project-content ul {
@@ -356,12 +418,53 @@ body {
 }
 
 .project-content li {
+  margin: 0 0 4px 0;
+  line-height: 1.6;
+}
+
+.project-content li:last-child {
+  margin-bottom: 0;
+}
+
+.project-content li p {
   margin: 0;
+}
+
+.project-content h1,
+.project-content h2,
+.project-content h3 {
+  margin: 12px 0 8px 0;
+  line-height: 1.3;
+}
+
+.project-content h1:first-child,
+.project-content h2:first-child,
+.project-content h3:first-child {
+  margin-top: 0;
 }
 
 .project-content a {
   color: ${v.accentColor};
   text-decoration: underline;
+}
+
+.project-content strong {
+  font-weight: 700;
+}
+
+.project-content em {
+  font-style: italic;
+}
+
+.project-content u {
+  text-decoration: underline;
+}
+
+.project-content blockquote {
+  border-left: 3px solid currentColor;
+  padding-left: 16px;
+  margin: 8px 0;
+  opacity: 0.8;
 }
 
 /* Founder Focus */
@@ -431,6 +534,72 @@ body {
   color: inherit;
 }
 
+.comic-caption p {
+  margin: 0 0 8px 0;
+  line-height: 1.6;
+}
+
+.comic-caption p:last-child {
+  margin-bottom: 0;
+}
+
+.comic-caption ul,
+.comic-caption ol {
+  margin: 8px 0;
+  padding-left: 24px;
+  text-align: left;
+}
+
+.comic-caption ul:last-child,
+.comic-caption ol:last-child {
+  margin-bottom: 0;
+}
+
+.comic-caption ul {
+  list-style-type: disc;
+}
+
+.comic-caption ol {
+  list-style-type: decimal;
+}
+
+.comic-caption li {
+  margin: 0 0 4px 0;
+  line-height: 1.6;
+}
+
+.comic-caption li:last-child {
+  margin-bottom: 0;
+}
+
+.comic-caption li p {
+  margin: 0;
+}
+
+.comic-caption a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.comic-caption strong {
+  font-weight: 700;
+}
+
+.comic-caption em {
+  font-style: italic;
+}
+
+.comic-caption u {
+  text-decoration: underline;
+}
+
+.comic-caption blockquote {
+  border-left: 3px solid currentColor;
+  padding-left: 16px;
+  margin: 8px 0;
+  opacity: 0.8;
+}
+
 /* Footer */
 .newsletter-footer {
   padding: 24px;
@@ -451,6 +620,63 @@ body {
 
 .newsletter-footer .footer-content p:last-child {
   margin-bottom: 0;
+}
+
+.newsletter-footer .footer-content ul,
+.newsletter-footer .footer-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+  text-align: left;
+}
+
+.newsletter-footer .footer-content ul:last-child,
+.newsletter-footer .footer-content ol:last-child {
+  margin-bottom: 0;
+}
+
+.newsletter-footer .footer-content ul {
+  list-style-type: disc;
+}
+
+.newsletter-footer .footer-content ol {
+  list-style-type: decimal;
+}
+
+.newsletter-footer .footer-content li {
+  margin: 0 0 4px 0;
+  line-height: 1.625;
+}
+
+.newsletter-footer .footer-content li:last-child {
+  margin-bottom: 0;
+}
+
+.newsletter-footer .footer-content li p {
+  margin: 0;
+}
+
+.newsletter-footer .footer-content a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.newsletter-footer .footer-content strong {
+  font-weight: 700;
+}
+
+.newsletter-footer .footer-content em {
+  font-style: italic;
+}
+
+.newsletter-footer .footer-content u {
+  text-decoration: underline;
+}
+
+.newsletter-footer .footer-content blockquote {
+  border-left: 3px solid currentColor;
+  padding-left: 16px;
+  margin: 8px 0;
+  opacity: 0.8;
 }
 
 .social-links {
@@ -474,6 +700,15 @@ body {
 }
 
 /* Rich text content helpers */
+.rich-text p {
+  margin: 0 0 8px 0;
+  line-height: 1.6;
+}
+
+.rich-text p:last-child {
+  margin-bottom: 0;
+}
+
 .rich-text a {
   color: ${v.accentColor};
   text-decoration: underline;

@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { Plus, Trash2, GripVertical, X, Settings2, Palette, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { Plus, Trash2, GripVertical, X, Settings2, Palette, AlignLeft, AlignCenter, AlignRight, Image, FileText } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Textarea } from '../ui/textarea';
 import { MobileEditingBanner } from './mobile-override-badge';
@@ -445,22 +445,181 @@ function DividerSettings() {
 
 // --- Comic ---
 
+// Sortable component items for drag-and-drop reordering
+interface ComicItem {
+  id: string;
+  type: 'image' | 'caption';
+}
+
+function SortableComicItem({
+  item,
+  section,
+  onUpdate,
+}: {
+  item: ComicItem;
+  section: Section;
+  onUpdate: (sectionId: string, data: any) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+    position: 'relative' as const,
+  };
+
+  const d = section.data;
+
+  return (
+    <div ref={setNodeRef} style={style} className="border border-border rounded-lg p-3 bg-muted/10">
+      <div className="flex items-center gap-2 mb-2">
+        <button
+          type="button"
+          className="cursor-grab active:cursor-grabbing shrink-0 p-0.5 text-muted-foreground/50 hover:text-muted-foreground touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+        <div className="flex items-center gap-2">
+          {item.type === 'image' ? (
+            <Image className="w-3.5 h-3.5 text-primary" />
+          ) : (
+            <FileText className="w-3.5 h-3.5 text-primary" />
+          )}
+          <Label className="text-xs font-semibold">
+            {item.type === 'image' ? 'Image' : 'Caption'}
+          </Label>
+        </div>
+      </div>
+
+      {item.type === 'image' ? (
+        <ImageUpload
+          value={d.imageUrl || ''}
+          onChange={(url) => onUpdate(section.id, { imageUrl: url })}
+          aspectLabel="Any size"
+        />
+      ) : (
+        <div className="space-y-3">
+          <RichTextEditor
+            content={d.caption || ''}
+            onChange={(html) => onUpdate(section.id, { caption: html })}
+            placeholder="Write your caption with rich formatting..."
+            compact
+            sectionId={section.id}
+            fieldName="comic-caption"
+          />
+          {/* Caption Alignment */}
+          <div className="space-y-1.5">
+            <Label className="text-xs">Caption Alignment</Label>
+            <div className="flex items-center gap-1">
+              {[
+                { value: 'left', icon: AlignLeft, label: 'Left' },
+                { value: 'center', icon: AlignCenter, label: 'Center' },
+                { value: 'right', icon: AlignRight, label: 'Right' },
+              ].map((opt) => {
+                const Icon = opt.icon;
+                const isActive = (d.captionAlign || 'center') === opt.value;
+                return (
+                  <Button
+                    key={opt.value}
+                    variant={isActive ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => onUpdate(section.id, { captionAlign: opt.value })}
+                    className="h-8 px-3 flex-1"
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ComicSettings({ section }: { section: Section }) {
   const updateData = useEditorStore((s) => s.updateSectionData);
   const d = section.data;
-  const fontColor = d.fontColor || '#000000';
-  const bgColor = d.bgColor || '#f4efe5';
+
+  // Build sortable items based on captionPosition
+  const captionPosition = d.captionPosition || 'below';
+  const items: ComicItem[] = useMemo(() => {
+    if (captionPosition === 'above') {
+      return [
+        { id: 'caption', type: 'caption' as const },
+        { id: 'image', type: 'image' as const },
+      ];
+    }
+    return [
+      { id: 'image', type: 'image' as const },
+      { id: 'caption', type: 'caption' as const },
+    ];
+  }, [captionPosition]);
+
+  const itemIds = useMemo(() => items.map((item) => item.id), [items]);
+
+  const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 5 } });
+  const keyboardSensor = useSensor(KeyboardSensor);
+  const sensors = useSensors(pointerSensor, keyboardSensor);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        // Toggle position
+        const newPosition = captionPosition === 'above' ? 'below' : 'above';
+        updateData(section.id, { captionPosition: newPosition });
+      }
+    },
+    [captionPosition, section.id, updateData],
+  );
+
   return (
     <div className="space-y-4">
       <Field label="Section Heading">
-        <Input value={d.heading || 'title'} onChange={(e) => updateData(section.id, { heading: e.target.value })} placeholder="Section heading" className="text-sm" />
+        <Input
+          value={d.heading || 'title'}
+          onChange={(e) => updateData(section.id, { heading: e.target.value })}
+          placeholder="Section heading"
+          className="text-sm"
+        />
       </Field>
-      <Field label="Image">
-        <ImageUpload value={d.imageUrl || ''} onChange={(url) => updateData(section.id, { imageUrl: url })} aspectLabel="Any size" />
-      </Field>
-      <Field label="Caption">
-        <Input value={d.caption || ''} onChange={(e) => updateData(section.id, { caption: e.target.value })} placeholder="Optional caption" className="text-sm" />
-      </Field>
+
+      <Separator />
+
+      {/* Drag-and-drop reorder interface */}
+      <div className="space-y-2">
+        <Label className="text-xs font-semibold">Content Layout</Label>
+        <p className="text-[10px] text-muted-foreground mb-2">
+          Drag to reorder image and caption
+        </p>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {items.map((item) => (
+                <SortableComicItem
+                  key={item.id}
+                  item={item}
+                  section={section}
+                  onUpdate={updateData}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </div>
 
       {/* Section Colors */}
       <Separator />

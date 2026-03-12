@@ -12,13 +12,23 @@ function AlertDialog({
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
 }
 
-function AlertDialogTrigger({
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
+const AlertDialogTrigger = React.forwardRef<
+  React.ComponentRef<typeof AlertDialogPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Trigger>
+>(({ ...props }, ref) => {
+  // Filter out Figma inspection props that shouldn't be passed to DOM elements
+  const filteredProps = Object.keys(props).reduce((acc, key) => {
+    if (!key.startsWith('_fg')) {
+      acc[key] = props[key];
+    }
+    return acc;
+  }, {} as any);
+  
   return (
-    <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
+    <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" ref={ref} {...filteredProps} />
   );
-}
+});
+AlertDialogTrigger.displayName = "AlertDialogTrigger";
 
 function AlertDialogPortal({
   ...props

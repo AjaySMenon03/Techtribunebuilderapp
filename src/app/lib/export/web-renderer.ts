@@ -184,20 +184,32 @@ function renderComic(section: Section): string {
   const isDark = isColorDark(bgColor);
   const heading = data.heading || 'title';
   const placeholderBg = isDark ? '#374151' : '#f3f4f6';
+  const captionPosition = data.captionPosition || 'below';
+  const captionAlign = data.captionAlign || 'center';
+  
   const parts: string[] = [];
   parts.push(`<div class="newsletter-section" style="background-color:${bgColor};color:${fontColor};">`);
   parts.push(`  <div class="section-heading">`);
   parts.push(`    <h2 style="color:${fontColor};">${escapeHtml(heading)}</h2>`);
   parts.push('  </div>');
   parts.push('  <div class="comic-section">');
-  if (data.imageUrl) {
-    parts.push(`    <img src="${escapeHtml(data.imageUrl)}" alt="Comic" class="comic-image" />`);
+  
+  const imageHtml = data.imageUrl
+    ? `    <img src="${escapeHtml(data.imageUrl)}" alt="Comic" class="comic-image" style="margin-bottom:${captionPosition === 'below' ? '8px' : '0'};margin-top:${captionPosition === 'above' ? '8px' : '0'};" />`
+    : `    <div class="comic-placeholder" style="background-color:${placeholderBg};margin-bottom:${captionPosition === 'below' ? '8px' : '0'};margin-top:${captionPosition === 'above' ? '8px' : '0'};"></div>`;
+  
+  const captionHtml = data.caption
+    ? `    <div class="comic-caption rich-text" style="color:${fontColor};text-align:${captionAlign};">${data.caption}</div>`
+    : '';
+  
+  if (captionPosition === 'above') {
+    if (captionHtml) parts.push(captionHtml);
+    parts.push(imageHtml);
   } else {
-    parts.push(`    <div class="comic-placeholder" style="background-color:${placeholderBg};"></div>`);
+    parts.push(imageHtml);
+    if (captionHtml) parts.push(captionHtml);
   }
-  if (data.caption) {
-    parts.push(`    <p class="comic-caption" style="color:${fontColor};">${escapeHtml(data.caption)}</p>`);
-  }
+  
   parts.push('  </div>');
   parts.push('</div>');
   return parts.join('\n');

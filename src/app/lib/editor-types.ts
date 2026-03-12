@@ -81,7 +81,9 @@ export interface ProjectUpdateSectionData {
 
 export interface ComicSectionData {
   imageUrl: string;
-  caption: string;
+  caption: string; // Now HTML (rich text)
+  captionPosition: 'above' | 'below'; // Drag-drop reorder
+  captionAlign: 'left' | 'center' | 'right'; // Caption alignment
   heading: string;
   fontColor: string;
   bgColor: string;
@@ -194,7 +196,7 @@ export function createDefaultSectionData(baseType: SectionBaseType): Record<stri
     case 'divider':
       return {} satisfies DividerSectionData;
     case 'comic':
-      return { imageUrl: '', caption: '', heading: 'title', fontColor: '#000000', bgColor: '#f4efe5' } satisfies ComicSectionData;
+      return { imageUrl: '', caption: '', captionPosition: 'below', captionAlign: 'center', heading: 'title', fontColor: '#000000', bgColor: '#f4efe5' } satisfies ComicSectionData;
     case 'footer':
       return {
         content: '<p>Visit the website: www.electronikmedia.com</p>',

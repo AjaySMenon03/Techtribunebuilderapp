@@ -7,6 +7,11 @@ import { UserCircle, Heart, Smile, Linkedin, Instagram, Facebook, Globe } from '
 
 const HEADING_FONT = "'Libre Caslon Text', serif";
 
+// Typography constants for consistent rendering
+const BASE_LINE_HEIGHT = 1.6;
+const HEADING_LINE_HEIGHT = 1.3;
+const TIGHT_LINE_HEIGHT = 1.4;
+
 // Helper: determine if a color is "dark" (for choosing readable secondary text colors)
 function isDarkBackground(hex: string): boolean {
   const c = hex.replace('#', '');
@@ -360,7 +365,7 @@ function AppreciationPreview({ data, theme }: { data: any; theme: ThemeConfig })
             )}
             <p style={{ fontSize: '14px', fontWeight: 600, margin: 0, color: fontColor, wordWrap: 'break-word', overflowWrap: 'break-word' }}>{m.name || 'Name'}</p>
             {m.message && (
-              <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px', color: fontColor, wordWrap: 'break-word', overflowWrap: 'break-word' }} dangerouslySetInnerHTML={{ __html: m.message }} />
+              <div className="appreciation-message" style={{ fontSize: '12px', opacity: 0.7, marginTop: '4px', color: fontColor, wordWrap: 'break-word', overflowWrap: 'break-word' }} dangerouslySetInnerHTML={{ __html: m.message }} />
             )}
           </div>
         );
@@ -376,7 +381,7 @@ function AppreciationPreview({ data, theme }: { data: any; theme: ThemeConfig })
 function ProjectUpdatePreview({ data, theme }: { data: any; theme: ThemeConfig }) {
   const previewMode = useEditorStore((s) => s.previewMode);
   const isMobile = previewMode === 'mobile';
-  const columns: number = isMobile ? 1 : Math.min(Math.max(data.columns || 1, 1), 3);
+  const columns: number = Math.min(Math.max(data.columns || 1, 1), 3);
   const fontColor = data.fontColor || '#000000';
   // Support legacy contentColumns array or single content field
   const content: string = data.content
@@ -384,29 +389,20 @@ function ProjectUpdatePreview({ data, theme }: { data: any; theme: ThemeConfig }
     || '<p><em>No content yet</em></p>';
 
   return (
-    <div>
-      <div
-        className="project-update-content"
-        style={{
-          fontSize: '14px',
-          lineHeight: 1.625,
-          color: fontColor,
-          columnCount: columns,
-          columnGap: '12px',
-          wordWrap: 'break-word',
-          overflowWrap: 'break-word',
-          overflow: 'hidden',
-        }}
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
-      <style>{`
-        .project-update-content p { margin: 2px 0; }
-        .project-update-content ul { list-style-type: disc; padding-left: 20px; margin: 4px 0; }
-        .project-update-content ol { list-style-type: decimal; padding-left: 20px; margin: 4px 0; }
-        .project-update-content li { margin: 0; }
-        .project-update-content a { text-decoration: underline; }
-      `}</style>
-    </div>
+    <div
+      className="project-update-content"
+      style={{
+        fontSize: '14px',
+        lineHeight: 1.625,
+        color: fontColor,
+        columnCount: columns,
+        columnGap: '12px',
+        wordWrap: 'break-word',
+        overflowWrap: 'break-word',
+        overflow: 'hidden',
+      }}
+      dangerouslySetInnerHTML={{ __html: content }}
+    />
   );
 }
 
@@ -450,16 +446,38 @@ function ComicPreview({ data, theme }: { data: any; theme: ThemeConfig }) {
   const bgColor = data.bgColor || '#f4efe5';
   const fontColor = data.fontColor || '#000000';
   const placeholderBg = getPlaceholderBg(bgColor);
+  const captionPosition = data.captionPosition || 'below';
+  const captionAlign = data.captionAlign || 'center';
+
+  const imageElement = data.imageUrl ? (
+    <img src={data.imageUrl} alt="Comic" style={{ maxWidth: '100%', borderRadius: '8px', marginBottom: captionPosition === 'below' ? '8px' : '0', marginTop: captionPosition === 'above' ? '8px' : '0', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
+  ) : (
+    <div style={{ width: '100%', height: '192px', borderRadius: '8px', backgroundColor: placeholderBg, marginBottom: captionPosition === 'below' ? '8px' : '0', marginTop: captionPosition === 'above' ? '8px' : '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Smile style={{ width: '48px', height: '48px', color: getSecondaryTextColor(bgColor, fontColor) }} />
+    </div>
+  );
+
+  const captionElement = data.caption ? (
+    <div
+      className="comic-caption"
+      style={{ fontSize: '14px', color: fontColor, margin: 0, textAlign: captionAlign }}
+      dangerouslySetInnerHTML={{ __html: data.caption }}
+    />
+  ) : null;
+
   return (
     <div style={{ textAlign: 'center' }}>
-      {data.imageUrl ? (
-        <img src={data.imageUrl} alt="Comic" style={{ maxWidth: '100%', borderRadius: '8px', marginBottom: '8px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
+      {captionPosition === 'above' ? (
+        <>
+          {captionElement}
+          {imageElement}
+        </>
       ) : (
-        <div style={{ width: '100%', height: '192px', borderRadius: '8px', backgroundColor: placeholderBg, marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Smile style={{ width: '48px', height: '48px', color: getSecondaryTextColor(bgColor, fontColor) }} />
-        </div>
+        <>
+          {imageElement}
+          {captionElement}
+        </>
       )}
-      {data.caption && <p style={{ fontSize: '14px', fontStyle: 'italic', opacity: 0.7, margin: 0, color: fontColor }}>{data.caption}</p>}
     </div>
   );
 }
@@ -485,7 +503,7 @@ function FooterPreview({ data, theme }: { data: any; theme: ThemeConfig }) {
     <div
       style={{ padding: '20px', textAlign: 'center', fontSize: '14px', backgroundColor: bgColor, color: fontColor }}
     >
-      <div style={{ lineHeight: 1.625, opacity: 0.7, marginBottom: '12px' }} dangerouslySetInnerHTML={{ __html: data.content || '<p>Visit the website: www.electronikmedia.com</p>' }} />
+      <div className="footer-content" style={{ lineHeight: 1.625, opacity: 0.7, marginBottom: '12px' }} dangerouslySetInnerHTML={{ __html: data.content || '<p>Visit the website: www.electronikmedia.com</p>' }} />
       {data.socialLinks?.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginTop: '8px' }}>
           {data.socialLinks.map((link: any, i: number) => (

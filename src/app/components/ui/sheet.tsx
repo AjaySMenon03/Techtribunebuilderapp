@@ -10,11 +10,21 @@ function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
 }
 
-function SheetTrigger({
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />;
-}
+const SheetTrigger = React.forwardRef<
+  React.ComponentRef<typeof SheetPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Trigger>
+>(({ ...props }, ref) => {
+  // Filter out Figma inspection props that shouldn't be passed to DOM elements
+  const filteredProps = Object.keys(props).reduce((acc, key) => {
+    if (!key.startsWith('_fg')) {
+      acc[key] = props[key];
+    }
+    return acc;
+  }, {} as any);
+  
+  return <SheetPrimitive.Trigger data-slot="sheet-trigger" ref={ref} {...filteredProps} />;
+});
+SheetTrigger.displayName = "SheetTrigger";
 
 function SheetClose({
   ...props

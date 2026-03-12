@@ -11,13 +11,23 @@ function HoverCard({
   return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />;
 }
 
-function HoverCardTrigger({
-  ...props
-}: React.ComponentProps<typeof HoverCardPrimitive.Trigger>) {
+const HoverCardTrigger = React.forwardRef<
+  React.ComponentRef<typeof HoverCardPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Trigger>
+>(({ ...props }, ref) => {
+  // Filter out Figma inspection props that shouldn't be passed to DOM elements
+  const filteredProps = Object.keys(props).reduce((acc, key) => {
+    if (!key.startsWith('_fg')) {
+      acc[key] = props[key];
+    }
+    return acc;
+  }, {} as any);
+  
   return (
-    <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" {...props} />
+    <HoverCardPrimitive.Trigger data-slot="hover-card-trigger" ref={ref} {...filteredProps} />
   );
-}
+});
+HoverCardTrigger.displayName = "HoverCardTrigger";
 
 function HoverCardContent({
   className,

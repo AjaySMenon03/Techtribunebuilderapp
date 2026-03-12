@@ -20,16 +20,27 @@ function DropdownMenuPortal({
   );
 }
 
-function DropdownMenuTrigger({
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+const DropdownMenuTrigger = React.forwardRef<
+  React.ComponentRef<typeof DropdownMenuPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
+>(({ ...props }, ref) => {
+  // Filter out Figma inspection props that shouldn't be passed to DOM elements
+  const filteredProps = Object.keys(props).reduce((acc, key) => {
+    if (!key.startsWith('_fg')) {
+      acc[key] = props[key];
+    }
+    return acc;
+  }, {} as any);
+  
   return (
     <DropdownMenuPrimitive.Trigger
       data-slot="dropdown-menu-trigger"
-      {...props}
+      ref={ref}
+      {...filteredProps}
     />
   );
-}
+});
+DropdownMenuTrigger.displayName = "DropdownMenuTrigger";
 
 function DropdownMenuContent({
   className,

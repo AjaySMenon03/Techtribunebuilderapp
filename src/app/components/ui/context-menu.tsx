@@ -12,13 +12,23 @@ function ContextMenu({
   return <ContextMenuPrimitive.Root data-slot="context-menu" {...props} />;
 }
 
-function ContextMenuTrigger({
-  ...props
-}: React.ComponentProps<typeof ContextMenuPrimitive.Trigger>) {
+const ContextMenuTrigger = React.forwardRef<
+  React.ComponentRef<typeof ContextMenuPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Trigger>
+>(({ ...props }, ref) => {
+  // Filter out Figma inspection props that shouldn't be passed to DOM elements
+  const filteredProps = Object.keys(props).reduce((acc, key) => {
+    if (!key.startsWith('_fg')) {
+      acc[key] = props[key];
+    }
+    return acc;
+  }, {} as any);
+  
   return (
-    <ContextMenuPrimitive.Trigger data-slot="context-menu-trigger" {...props} />
+    <ContextMenuPrimitive.Trigger data-slot="context-menu-trigger" ref={ref} {...filteredProps} />
   );
-}
+});
+ContextMenuTrigger.displayName = "ContextMenuTrigger";
 
 function ContextMenuGroup({
   ...props

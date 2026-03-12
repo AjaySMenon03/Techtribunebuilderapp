@@ -29,6 +29,10 @@ const PAGE_PAD_X = 48;
 const PAGE_PAD_Y = 40;
 const NEWSLETTER_MAX_W = 600; // matches the live preview
 
+// Typography constants for consistent rendering
+const BASE_FONT_SIZE = 14;
+const BASE_LINE_HEIGHT = 1.6;
+
 export type A4Format = 'png' | 'jpg' | 'pdf';
 
 export interface A4DomRenderOptions {
@@ -109,13 +113,249 @@ function OffscreenNewsletter({ sections, theme, darkMode }: OffscreenNewsletterP
         backgroundColor: pageBg,
         padding: `${PAGE_PAD_Y}px ${PAGE_PAD_X}px`,
         fontFamily: `'${et.font_family || 'Inter'}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`,
-        fontSize: 14,
-        lineHeight: 1.6,
+        fontSize: BASE_FONT_SIZE,
+        lineHeight: BASE_LINE_HEIGHT,
         color: et.text_color,
         WebkitFontSmoothing: 'antialiased',
         MozOsxFontSmoothing: 'grayscale' as any,
       }}
     >
+      {/* Global styles for rich text rendering */}
+      <style>{`
+        /* Rich text elements - Project Update */
+        .project-update-content p {
+          margin: 0 0 8px 0;
+          line-height: ${BASE_LINE_HEIGHT};
+          font-size: 14px;
+        }
+        .project-update-content p:last-child {
+          margin-bottom: 0;
+        }
+        .project-update-content ul,
+        .project-update-content ol {
+          margin: 8px 0;
+          padding-left: 24px;
+        }
+        .project-update-content ul:last-child,
+        .project-update-content ol:last-child {
+          margin-bottom: 0;
+        }
+        .project-update-content ul {
+          list-style-type: disc;
+        }
+        .project-update-content ol {
+          list-style-type: decimal;
+        }
+        .project-update-content li {
+          margin: 0 0 4px 0;
+          line-height: ${BASE_LINE_HEIGHT};
+          font-size: 14px;
+        }
+        .project-update-content li:last-child {
+          margin-bottom: 0;
+        }
+        .project-update-content li p {
+          margin: 0;
+        }
+        .project-update-content h1,
+        .project-update-content h2,
+        .project-update-content h3 {
+          margin: 12px 0 8px 0;
+          line-height: 1.3;
+        }
+        .project-update-content h1:first-child,
+        .project-update-content h2:first-child,
+        .project-update-content h3:first-child {
+          margin-top: 0;
+        }
+        .project-update-content a {
+          color: inherit;
+          text-decoration: underline;
+        }
+        .project-update-content strong {
+          font-weight: 700;
+        }
+        .project-update-content em {
+          font-style: italic;
+        }
+        .project-update-content u {
+          text-decoration: underline;
+        }
+        .project-update-content blockquote {
+          border-left: 3px solid currentColor;
+          padding-left: 16px;
+          margin: 8px 0;
+          opacity: 0.8;
+        }
+        
+        /* Rich text elements - Comic caption */
+        .comic-caption p {
+          margin: 0 0 8px 0;
+          line-height: ${BASE_LINE_HEIGHT};
+          font-size: 14px;
+        }
+        .comic-caption p:last-child {
+          margin-bottom: 0;
+        }
+        .comic-caption ul,
+        .comic-caption ol {
+          margin: 8px 0;
+          padding-left: 24px;
+          text-align: left;
+        }
+        .comic-caption ul:last-child,
+        .comic-caption ol:last-child {
+          margin-bottom: 0;
+        }
+        .comic-caption ul {
+          list-style-type: disc;
+        }
+        .comic-caption ol {
+          list-style-type: decimal;
+        }
+        .comic-caption li {
+          margin: 0 0 4px 0;
+          line-height: ${BASE_LINE_HEIGHT};
+          font-size: 14px;
+        }
+        .comic-caption li:last-child {
+          margin-bottom: 0;
+        }
+        .comic-caption li p {
+          margin: 0;
+        }
+        .comic-caption a {
+          color: inherit;
+          text-decoration: underline;
+        }
+        .comic-caption strong {
+          font-weight: 700;
+        }
+        .comic-caption em {
+          font-style: italic;
+        }
+        .comic-caption u {
+          text-decoration: underline;
+        }
+        
+        /* Rich text elements - Appreciation message */
+        .appreciation-message p {
+          margin: 0 0 4px 0;
+          line-height: 1.5;
+          font-size: 12px;
+        }
+        .appreciation-message p:last-child {
+          margin-bottom: 0;
+        }
+        .appreciation-message ul,
+        .appreciation-message ol {
+          margin: 4px 0;
+          padding-left: 20px;
+          text-align: left;
+        }
+        .appreciation-message ul:last-child,
+        .appreciation-message ol:last-child {
+          margin-bottom: 0;
+        }
+        .appreciation-message ul {
+          list-style-type: disc;
+        }
+        .appreciation-message ol {
+          list-style-type: decimal;
+        }
+        .appreciation-message li {
+          margin: 0 0 2px 0;
+          line-height: 1.5;
+          font-size: 12px;
+        }
+        .appreciation-message li:last-child {
+          margin-bottom: 0;
+        }
+        .appreciation-message li p {
+          margin: 0;
+        }
+        .appreciation-message a {
+          color: inherit;
+          text-decoration: underline;
+        }
+        .appreciation-message strong {
+          font-weight: 700;
+        }
+        .appreciation-message em {
+          font-style: italic;
+        }
+        .appreciation-message u {
+          text-decoration: underline;
+        }
+        .appreciation-message blockquote {
+          border-left: 2px solid currentColor;
+          padding-left: 12px;
+          margin: 4px 0;
+          opacity: 0.8;
+        }
+        
+        /* Rich text elements - Footer */
+        .footer-content p {
+          margin: 0 0 8px 0;
+          line-height: 1.625;
+          font-size: 14px;
+        }
+        .footer-content p:last-child {
+          margin-bottom: 0;
+        }
+        .footer-content ul,
+        .footer-content ol {
+          margin: 8px 0;
+          padding-left: 24px;
+          text-align: left;
+        }
+        .footer-content ul:last-child,
+        .footer-content ol:last-child {
+          margin-bottom: 0;
+        }
+        .footer-content ul {
+          list-style-type: disc;
+        }
+        .footer-content ol {
+          list-style-type: decimal;
+        }
+        .footer-content li {
+          margin: 0 0 4px 0;
+          line-height: 1.625;
+          font-size: 14px;
+        }
+        .footer-content li:last-child {
+          margin-bottom: 0;
+        }
+        .footer-content li p {
+          margin: 0;
+        }
+        .footer-content a {
+          color: inherit;
+          text-decoration: underline;
+        }
+        .footer-content strong {
+          font-weight: 700;
+        }
+        .footer-content em {
+          font-style: italic;
+        }
+        .footer-content u {
+          text-decoration: underline;
+        }
+        .footer-content blockquote {
+          border-left: 3px solid currentColor;
+          padding-left: 16px;
+          margin: 8px 0;
+          opacity: 0.8;
+        }
+        
+        /* Ensure font inheritance */
+        * {
+          font-family: inherit;
+        }
+      `}</style>
+      
       {/* Newsletter card — matches preview-canvas.tsx */}
       <div
         style={{

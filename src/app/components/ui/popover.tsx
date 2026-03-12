@@ -15,7 +15,15 @@ const PopoverTrigger = React.forwardRef<
   React.ComponentRef<typeof PopoverPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Trigger>
 >(({ ...props }, ref) => {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" ref={ref} {...props} />;
+  // Filter out Figma inspection props that shouldn't be passed to DOM elements
+  const filteredProps = Object.keys(props).reduce((acc, key) => {
+    if (!key.startsWith('_fg')) {
+      acc[key] = props[key];
+    }
+    return acc;
+  }, {} as any);
+  
+  return <PopoverPrimitive.Trigger data-slot="popover-trigger" ref={ref} {...filteredProps} />;
 });
 PopoverTrigger.displayName = "PopoverTrigger";
 

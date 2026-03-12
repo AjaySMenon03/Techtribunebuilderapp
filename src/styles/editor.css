@@ -1,156 +1,292 @@
-/* TipTap Editor Styles */
-.tiptap {
-  outline: none;
-  min-height: 60px;
-  font-size: 14px;
+/* ========================================
+   RICH TEXT CONTENT STYLES
+   Applied to all sections with rich text editing
+   ======================================== */
+
+/* Project Update Content */
+.project-update-content p {
+  margin: 0 0 8px 0;
   line-height: 1.6;
+  font-size: 14px;
 }
 
-.tiptap p {
-  margin: 0 0 0.5em 0;
-}
-
-.tiptap p:last-child {
+.project-update-content p:last-child {
   margin-bottom: 0;
 }
 
-.tiptap h2 {
-  font-size: 1.25em;
-  font-weight: 700;
-  margin: 0 0 0.5em 0;
+.project-update-content ul,
+.project-update-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
 }
 
-.tiptap h3 {
-  font-size: 1.1em;
-  font-weight: 600;
-  margin: 0 0 0.5em 0;
+.project-update-content ul:last-child,
+.project-update-content ol:last-child {
+  margin-bottom: 0;
 }
 
-.tiptap h4 {
-  font-size: 1em;
-  font-weight: 600;
-  margin: 0 0 0.5em 0;
-}
-
-.tiptap ul,
-.tiptap ol {
-  padding-left: 1.5em;
-  margin: 0 0 0.5em 0;
-}
-
-.tiptap ul {
+.project-update-content ul {
   list-style-type: disc;
 }
 
-.tiptap ol {
+.project-update-content ol {
   list-style-type: decimal;
 }
 
-.tiptap li {
-  margin-bottom: 0.15em;
+.project-update-content li {
+  margin: 0 0 4px 0;
+  line-height: 1.6;
+  font-size: 14px;
 }
 
-.tiptap a {
-  color: var(--primary);
+.project-update-content li:last-child {
+  margin-bottom: 0;
+}
+
+.project-update-content li p {
+  margin: 0;
+}
+
+.project-update-content h1,
+.project-update-content h2,
+.project-update-content h3 {
+  margin: 12px 0 8px 0;
+  line-height: 1.3;
+}
+
+.project-update-content h1:first-child,
+.project-update-content h2:first-child,
+.project-update-content h3:first-child {
+  margin-top: 0;
+}
+
+.project-update-content a {
+  color: inherit;
   text-decoration: underline;
-  cursor: pointer;
 }
 
-.tiptap blockquote {
-  border-left: 3px solid var(--border);
-  padding-left: 1em;
-  margin: 0.5em 0;
-  font-style: italic;
-  opacity: 0.8;
-}
-
-.tiptap code {
-  background: var(--muted);
-  border-radius: 4px;
-  padding: 0.1em 0.3em;
-  font-size: 0.9em;
-}
-
-.tiptap pre {
-  background: var(--muted);
-  border-radius: 8px;
-  padding: 0.75em 1em;
-  margin: 0.5em 0;
-  overflow-x: auto;
-}
-
-.tiptap pre code {
-  background: transparent;
-  padding: 0;
-}
-
-.tiptap hr {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 1em 0;
-}
-
-/* Placeholder */
-.tiptap p.is-editor-empty:first-child::before {
-  content: attr(data-placeholder);
-  float: left;
-  color: var(--muted-foreground);
-  opacity: 0.5;
-  pointer-events: none;
-  height: 0;
-}
-
-.tiptap strong {
+.project-update-content strong {
   font-weight: 700;
 }
 
-.tiptap em {
+.project-update-content em {
   font-style: italic;
 }
 
-.tiptap u {
+.project-update-content u {
   text-decoration: underline;
 }
 
-/* Collaboration cursor indicators */
-.collab-cursor {
-  position: relative;
-  border-left: 2px solid;
-  margin-left: -1px;
-  margin-right: -1px;
-  pointer-events: none;
+.project-update-content blockquote {
+  border-left: 3px solid currentColor;
+  padding-left: 16px;
+  margin: 8px 0;
+  opacity: 0.8;
 }
 
-.collab-cursor-label {
-  position: absolute;
-  top: -1.3em;
-  left: -1px;
-  font-size: 9px;
-  font-weight: 600;
-  line-height: 1;
-  color: white;
-  padding: 1px 4px;
-  border-radius: 3px 3px 3px 0;
-  white-space: nowrap;
-  pointer-events: none;
+/* Comic Caption Content */
+.comic-caption p {
+  margin: 0 0 8px 0;
+  line-height: 1.6;
+  font-size: 14px;
 }
 
-/* Animate collaboration updates */
-@keyframes collab-flash {
-  0% { background-color: rgba(59, 130, 246, 0.1); }
-  100% { background-color: transparent; }
+.comic-caption p:last-child {
+  margin-bottom: 0;
 }
 
-.collab-updated {
-  animation: collab-flash 0.5s ease-out;
+.comic-caption ul,
+.comic-caption ol {
+  margin: 8px 0;
+  padding-left: 24px;
+  text-align: left;
 }
 
-/* Version history slide-in animation */
-@keyframes slide-in-right {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+.comic-caption ul:last-child,
+.comic-caption ol:last-child {
+  margin-bottom: 0;
 }
 
-.animate-slide-in-right {
-  animation: slide-in-right 0.3s ease-out;
+.comic-caption ul {
+  list-style-type: disc;
+}
+
+.comic-caption ol {
+  list-style-type: decimal;
+}
+
+.comic-caption li {
+  margin: 0 0 4px 0;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.comic-caption li:last-child {
+  margin-bottom: 0;
+}
+
+.comic-caption li p {
+  margin: 0;
+}
+
+.comic-caption a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.comic-caption strong {
+  font-weight: 700;
+}
+
+.comic-caption em {
+  font-style: italic;
+}
+
+.comic-caption u {
+  text-decoration: underline;
+}
+
+.comic-caption blockquote {
+  border-left: 3px solid currentColor;
+  padding-left: 16px;
+  margin: 8px 0;
+  opacity: 0.8;
+}
+
+/* Appreciation Message Content */
+.appreciation-message p {
+  margin: 0 0 4px 0;
+  line-height: 1.5;
+  font-size: 12px;
+}
+
+.appreciation-message p:last-child {
+  margin-bottom: 0;
+}
+
+.appreciation-message ul,
+.appreciation-message ol {
+  margin: 4px 0;
+  padding-left: 20px;
+  text-align: left;
+}
+
+.appreciation-message ul:last-child,
+.appreciation-message ol:last-child {
+  margin-bottom: 0;
+}
+
+.appreciation-message ul {
+  list-style-type: disc;
+}
+
+.appreciation-message ol {
+  list-style-type: decimal;
+}
+
+.appreciation-message li {
+  margin: 0 0 2px 0;
+  line-height: 1.5;
+  font-size: 12px;
+}
+
+.appreciation-message li:last-child {
+  margin-bottom: 0;
+}
+
+.appreciation-message li p {
+  margin: 0;
+}
+
+.appreciation-message a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.appreciation-message strong {
+  font-weight: 700;
+}
+
+.appreciation-message em {
+  font-style: italic;
+}
+
+.appreciation-message u {
+  text-decoration: underline;
+}
+
+.appreciation-message blockquote {
+  border-left: 2px solid currentColor;
+  padding-left: 12px;
+  margin: 4px 0;
+  opacity: 0.8;
+}
+
+/* Footer Content */
+.footer-content p {
+  margin: 0 0 8px 0;
+  line-height: 1.625;
+  font-size: 14px;
+}
+
+.footer-content p:last-child {
+  margin-bottom: 0;
+}
+
+.footer-content ul,
+.footer-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+  text-align: left;
+}
+
+.footer-content ul:last-child,
+.footer-content ol:last-child {
+  margin-bottom: 0;
+}
+
+.footer-content ul {
+  list-style-type: disc;
+}
+
+.footer-content ol {
+  list-style-type: decimal;
+}
+
+.footer-content li {
+  margin: 0 0 4px 0;
+  line-height: 1.625;
+  font-size: 14px;
+}
+
+.footer-content li:last-child {
+  margin-bottom: 0;
+}
+
+.footer-content li p {
+  margin: 0;
+}
+
+.footer-content a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.footer-content strong {
+  font-weight: 700;
+}
+
+.footer-content em {
+  font-style: italic;
+}
+
+.footer-content u {
+  text-decoration: underline;
+}
+
+.footer-content blockquote {
+  border-left: 3px solid currentColor;
+  padding-left: 16px;
+  margin: 8px 0;
+  opacity: 0.8;
 }
