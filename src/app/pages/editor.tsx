@@ -10,14 +10,33 @@ import { SectionSettingsPanel } from '../components/editor/section-settings-pane
 import { VersionHistoryPanel } from '../components/editor/version-history-panel';
 import { Loader2, Layers, Eye, Settings2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { useIsMobile } from '../components/ui/use-mobile';
 import { Button } from '../components/ui/button';
+import { Switch } from '../components/ui/switch';
+import { Label } from '../components/ui/label';
 
 const AUTO_SAVE_INTERVAL = 15_000; // 15 seconds
 
+const PANEL_ORDER = ['sections', 'preview', 'settings'] as const;
+type MobilePanel = typeof PANEL_ORDER[number];
+
+/** Use 1280px breakpoint so all tablets (landscape + portrait) get the mobile panel layout */
+function useIsNarrow() {
+  const [isNarrow, setIsNarrow] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 1280 : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1279px)');
+    const handler = (e: MediaQueryListEvent) => setIsNarrow(e.matches);
+    setIsNarrow(mq.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isNarrow;
+}
+
 export function EditorPage() {
   const { id } = useParams<{ id: string }>();
-  const isMobile = useIsMobile();
+  const isMobile = useIsNarrow();
   const navigate = useNavigate();
 
   // Auth
@@ -56,14 +75,43 @@ export function EditorPage() {
   const [saving, setSaving] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
   const [initialLoaded, setInitialLoaded] = useState(false);
-  const [mobilePanel, setMobilePanel] = useState<'preview' | 'sections' | 'settings'>('preview');
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>('preview');
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Swipe gesture tracking
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const navigatePanel = useCallback((dir: 'left' | 'right') => {
+    setMobilePanel((current) => {
+      const idx = PANEL_ORDER.indexOf(current);
+      const next = dir === 'left' ? idx + 1 : idx - 1;
+      if (next < 0 || next >= PANEL_ORDER.length) return current;
+      return PANEL_ORDER[next];
+    });
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+      const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+      touchStartRef.current = null;
+      // Require ≥60px horizontal movement and horizontal > 2.5× vertical (avoids scroll conflicts)
+      if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 2.5) {
+        navigatePanel(dx < 0 ? 'left' : 'right');
+      }
+    },
+    [navigatePanel],
+  );
 
   // Fetch newsletter on mount
   useEffect(() => {
     if (id) fetchOne(id);
     return () => {
-      // Reset editor state when leaving
       setSections([]);
       setCollabActive(false);
       registerCollabDelegate(null);
@@ -85,11 +133,8 @@ export function EditorPage() {
       markClean(currentNewsletter.updated_at);
       setInitialLoaded(true);
 
-      // Initialize Yjs collaboration
       if (user && id) {
         const userName = user.user_metadata?.name || user.email?.split('@')[0] || 'User';
-
-        // Register the collab delegate
         const collabState = useCollabStore.getState();
         registerCollabDelegate({
           yjsSetSections: collabState.yjsSetSections,
@@ -100,7 +145,6 @@ export function EditorPage() {
           yjsReorderSections: collabState.yjsReorderSections,
           yjsToggleVisibility: collabState.yjsToggleVisibility,
         });
-
         initCollaboration(id, user.id, userName, initialSections);
         setCollabActive(true);
       }
@@ -109,9 +153,7 @@ export function EditorPage() {
 
   // Track which section the local user is editing
   useEffect(() => {
-    if (collabConnected) {
-      setEditingSection(selectedSectionId);
-    }
+    if (collabConnected) setEditingSection(selectedSectionId);
   }, [selectedSectionId, collabConnected, setEditingSection]);
 
   // Track title/draft changes as dirty
@@ -119,9 +161,7 @@ export function EditorPage() {
   const draftRef = useRef(isDraft);
   useEffect(() => {
     if (initialLoaded) {
-      if (titleRef.current !== title || draftRef.current !== isDraft) {
-        markDirty();
-      }
+      if (titleRef.current !== title || draftRef.current !== isDraft) markDirty();
       titleRef.current = title;
       draftRef.current = isDraft;
     }
@@ -130,14 +170,10 @@ export function EditorPage() {
   // Build the save payload
   const buildPayload = useCallback(() => {
     const sanitizedSections = getSanitizedSections();
-    return {
-      title,
-      is_draft: isDraft,
-      content_json: { sections: sanitizedSections },
-    };
+    return { title, is_draft: isDraft, content_json: { sections: sanitizedSections } };
   }, [title, isDraft, getSanitizedSections]);
 
-  // Manual save (increments version) + creates version snapshot
+  // Manual save
   const handleManualSave = useCallback(async () => {
     if (!id) return;
     setSaving(true);
@@ -145,18 +181,14 @@ export function EditorPage() {
       await update(id, buildPayload());
       const newsletter = useNewsletterStore.getState().currentNewsletter;
       const newVersion = newsletter?.version || 1;
-
-      // Create version snapshot
       if (user) {
         const userName = user.user_metadata?.name || user.email?.split('@')[0] || 'User';
         try {
           await createSnapshot(id, newVersion, title || 'Untitled', user.id, userName);
         } catch (e) {
           console.error('Failed to create version snapshot:', e);
-          // Don't fail the save for this
         }
       }
-
       markClean(new Date().toISOString());
       toast.success(`Saved! (v${newVersion})`);
     } catch (err: any) {
@@ -167,7 +199,7 @@ export function EditorPage() {
     }
   }, [id, update, buildPayload, markClean, user, title, createSnapshot]);
 
-  // Auto-save (doesn't increment version)
+  // Auto-save
   const handleAutoSave = useCallback(async () => {
     if (!id || !dirty || saving || autoSaving) return;
     setAutoSaving(true);
@@ -181,30 +213,20 @@ export function EditorPage() {
     }
   }, [id, dirty, saving, autoSaving, autoSave, buildPayload, markClean]);
 
-  // Auto-save timer
   useEffect(() => {
-    autoSaveTimerRef.current = setInterval(() => {
-      handleAutoSave();
-    }, AUTO_SAVE_INTERVAL);
-
-    return () => {
-      if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
-    };
+    autoSaveTimerRef.current = setInterval(() => { handleAutoSave(); }, AUTO_SAVE_INTERVAL);
+    return () => { if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current); };
   }, [handleAutoSave]);
 
   // Keyboard shortcut: Ctrl+S
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        handleManualSave();
-      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); handleManualSave(); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleManualSave]);
 
-  // Get effective theme
   const theme = currentNewsletter?.theme_config || workspace.theme;
 
   if (nlLoading && !initialLoaded) {
@@ -226,7 +248,6 @@ export function EditorPage() {
     );
   }
 
-  // Edge case: loading finished but no newsletter and not yet initialized
   if (!currentNewsletter && !nlLoading && !initialLoaded) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -241,8 +262,10 @@ export function EditorPage() {
     );
   }
 
+  const currentPanelIndex = PANEL_ORDER.indexOf(mobilePanel);
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative">
       {/* Top bar */}
       <EditorTopBar
         title={title}
@@ -257,8 +280,12 @@ export function EditorPage() {
         onTitleChange={setTitle}
       />
 
-      {/* Three-panel layout (desktop) / Single panel with bottom nav (mobile) */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      {/* Three-panel layout (desktop) / Single panel with swipe + bottom nav (mobile/tablet) */}
+      <div
+        className="flex-1 flex overflow-hidden min-h-0"
+        onTouchStart={isMobile ? handleTouchStart : undefined}
+        onTouchEnd={isMobile ? handleTouchEnd : undefined}
+      >
         {/* Left: Section list */}
         {isMobile ? (
           mobilePanel === 'sections' && (
@@ -285,16 +312,38 @@ export function EditorPage() {
         {isMobile ? (
           mobilePanel === 'settings' && (
             <div className="w-full h-full bg-card overflow-hidden flex flex-col">
+              {/* Settings header */}
               <div className="px-4 py-3 border-b border-border shrink-0">
                 <h3 className="text-sm font-semibold">Section Settings</h3>
               </div>
+
+              {/* Draft / Published toggle — visible here on tablet since top bar hides it */}
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/30 shrink-0">
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  isDraft
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                    : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                }`}>
+                  {isDraft ? 'Draft' : 'Published'}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground" style={{ fontWeight: 'var(--font-weight-normal)' }}>Draft</Label>
+                  <Switch
+                    checked={!isDraft}
+                    onCheckedChange={(v) => setIsDraft(!v)}
+                    className="scale-90"
+                  />
+                  <Label className="text-xs text-muted-foreground" style={{ fontWeight: 'var(--font-weight-normal)' }}>Published</Label>
+                </div>
+              </div>
+
               <div className="flex-1 overflow-hidden">
                 <SectionSettingsPanel />
               </div>
             </div>
           )
         ) : (
-          <div className="w-72 lg:w-80 border-l border-border bg-card shrink-0 overflow-hidden hidden md:flex flex-col">
+          <div className="w-72 xl:w-80 border-l border-border bg-card shrink-0 overflow-hidden flex flex-col">
             <div className="px-4 py-3 border-b border-border shrink-0">
               <h3 className="text-sm font-semibold">Section Settings</h3>
             </div>
@@ -305,45 +354,47 @@ export function EditorPage() {
         )}
       </div>
 
-      {/* Mobile bottom navigation bar — sticky at the bottom */}
+      {/* Mobile bottom navigation bar */}
       {isMobile && (
         <div className="flex border-t border-border bg-card shrink-0 safe-area-bottom">
-          <button
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium transition-colors ${
-              mobilePanel === 'sections'
-                ? 'text-primary bg-primary/5'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setMobilePanel('sections')}
-            aria-label="Sections panel"
-          >
-            <Layers className="w-4 h-4" />
-            <span>Sections</span>
-          </button>
-          <button
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium transition-colors ${
-              mobilePanel === 'preview'
-                ? 'text-primary bg-primary/5'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setMobilePanel('preview')}
-            aria-label="Preview panel"
-          >
-            <Eye className="w-4 h-4" />
-            <span>Preview</span>
-          </button>
-          <button
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium transition-colors ${
-              mobilePanel === 'settings'
-                ? 'text-primary bg-primary/5'
-                : 'text-muted-foreground'
-            }`}
-            onClick={() => setMobilePanel('settings')}
-            aria-label="Settings panel"
-          >
-            <Settings2 className="w-4 h-4" />
-            <span>Settings</span>
-          </button>
+          {PANEL_ORDER.map((panel, idx) => {
+            const isActive = mobilePanel === panel;
+            const Icon = panel === 'sections' ? Layers : panel === 'preview' ? Eye : Settings2;
+            const label = panel === 'sections' ? 'Sections' : panel === 'preview' ? 'Preview' : 'Settings';
+            return (
+              <button
+                key={panel}
+                className={`flex-1 flex flex-col items-center justify-center py-2.5 text-xs font-medium transition-colors relative ${
+                  isActive ? 'text-primary bg-primary/5' : 'text-muted-foreground'
+                }`}
+                onClick={() => setMobilePanel(panel)}
+                aria-label={`${label} panel`}
+              >
+                {/* Active indicator dot */}
+                {isActive && (
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-primary" />
+                )}
+                <Icon className="w-4 h-4" />
+                <span className="mt-0.5">{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Swipe hint dots (shown briefly on mobile) */}
+      {isMobile && (
+        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-1.5 pointer-events-none">
+          {PANEL_ORDER.map((_, idx) => (
+            <span
+              key={idx}
+              className={`rounded-full transition-all duration-300 ${
+                idx === currentPanelIndex
+                  ? 'w-4 h-1.5 bg-primary/60'
+                  : 'w-1.5 h-1.5 bg-primary/20'
+              }`}
+            />
+          ))}
         </div>
       )}
 

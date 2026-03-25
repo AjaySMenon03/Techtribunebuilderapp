@@ -151,8 +151,8 @@ export function EditorTopBar({
         ) : null}
       </div>
 
-      {/* Presence (hidden on very small screens) */}
-      <div className="hidden md:flex items-center">
+      {/* Presence (hidden on tablets and smaller) */}
+      <div className="hidden lg:flex items-center">
         <Separator orientation="vertical" className="h-5 mr-2" />
         <PresenceBar />
       </div>
@@ -213,7 +213,7 @@ export function EditorTopBar({
         <ExportDropdown title={title} theme={theme} />
 
         {/* Draft / Published */}
-        <div className="hidden md:flex items-center gap-1.5 ml-1">
+        <div className="hidden lg:flex items-center gap-1.5 ml-1">
           <Label className="text-xs text-muted-foreground">Draft</Label>
           <Switch
             checked={!isDraft}

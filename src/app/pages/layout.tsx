@@ -29,15 +29,15 @@ export function AppLayout() {
 
   // Editor pages get their own full-width layout (no sidebar)
   const isEditorPage = location.pathname.startsWith('/editor/') || location.pathname.startsWith('/profile-generator/editor');
-  const isCanvasEditor = /^\/canvas-studio\/[^/]+/.test(location.pathname);
-  const isCanvasPage = location.pathname === '/canvas-studio';
-  const isFullPage = isEditorPage || isCanvasPage || isCanvasEditor;
+  const isCanvasEditor = location.pathname.startsWith('/canvas-studio/') && location.pathname.length > '/canvas-studio/'.length;
+  // Canvas projects list is NOT a full-page app — it needs the hamburger pt-14 on mobile
+  const isFullPage = isEditorPage || isCanvasEditor;
 
   return (
     <AuthGuard>
       <div className="flex h-screen overflow-hidden bg-background">
         {!isCanvasEditor && <SidebarNav />}
-        <main className={`flex-1 min-w-0 ${(isCanvasPage || isCanvasEditor) ? 'overflow-hidden' : 'overflow-auto'}`}>
+        <main className={`flex-1 min-w-0 ${(isCanvasEditor) ? 'overflow-hidden' : 'overflow-auto'}`}>
           {/* On mobile non-editor pages, add top padding for the hamburger button */}
           <div className={isFullPage ? 'h-full' : 'h-full md:pt-0 pt-14'}>
             <ErrorBoundary

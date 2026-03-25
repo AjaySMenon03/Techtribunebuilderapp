@@ -104,7 +104,7 @@ export function EditorLeftSidebar({ className }: { className?: string }) {
   }
 
   return (
-    <div className={`${className || 'w-56 lg:w-64'} border-r border-border bg-card flex flex-col shrink-0 overflow-hidden ${className?.includes('flex-1') ? '' : 'h-full'}`}>
+    <div className={`${className || 'w-56 xl:w-64'} border-r border-border bg-card flex flex-col shrink-0 overflow-hidden ${className?.includes('flex-1') ? '' : 'h-full'}`}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">

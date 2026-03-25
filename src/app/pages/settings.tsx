@@ -69,7 +69,7 @@ export function SettingsPage() {
 
       {/* ── Body: Sidebar + Content ─────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Sidebar Menu */}
+        {/* Desktop Sidebar Menu — hidden on mobile */}
         <aside className="w-56 lg:w-64 border-r border-border bg-card/50 shrink-0 overflow-y-auto hidden sm:block">
           <nav className="p-3 space-y-1">
             {MENU_ITEMS.map((item) => (
@@ -111,36 +111,39 @@ export function SettingsPage() {
           </nav>
         </aside>
 
-        {/* Mobile tab bar (visible on small screens) */}
-        <div className="sm:hidden border-b border-border bg-card/50 w-full shrink-0 overflow-x-auto absolute z-10">
-          <div className="flex px-2 py-1.5 gap-1">
-            {MENU_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors shrink-0',
-                  activeSection === item.id
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted',
-                )}
-              >
-                {item.icon}
-                {item.label}
-              </button>
-            ))}
+        {/* Right side: mobile tab bar + content */}
+        <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
+          {/* Mobile tab bar — in normal flex flow, not absolute */}
+          <div className="sm:hidden border-b border-border bg-card/50 shrink-0 overflow-x-auto">
+            <div className="flex px-2 py-1.5 gap-1">
+              {MENU_ITEMS.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors shrink-0',
+                    activeSection === item.id
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  {item.icon}
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto min-w-0">
-          <div className="p-4 sm:p-6 lg:p-8 max-w-4xl sm:pt-6 pt-14">
-            {activeSection === 'general' && <GeneralSettings />}
-            {activeSection === 'theme' && <ThemeSettings />}
-            {activeSection === 'templates' && <TemplateSettings />}
-            {activeSection === 'assets' && <AssetLibrarySettings />}
-          </div>
-        </main>
+          {/* Content Area */}
+          <main className="flex-1 overflow-y-auto min-w-0">
+            <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+              {activeSection === 'general' && <GeneralSettings />}
+              {activeSection === 'theme' && <ThemeSettings />}
+              {activeSection === 'templates' && <TemplateSettings />}
+              {activeSection === 'assets' && <AssetLibrarySettings />}
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );

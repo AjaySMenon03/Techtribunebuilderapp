@@ -114,10 +114,10 @@ export default function CanvasProjectsList() {
     <div className="h-full flex flex-col bg-background">
       {/* Header */}
       <div className="border-b border-border/50 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between mb-5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center shadow-lg shadow-violet-500/20 shrink-0">
                 <Shapes className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -127,7 +127,7 @@ export default function CanvasProjectsList() {
             </div>
             <Button
               onClick={handleNewProject}
-              className="gap-2 rounded-xl shadow-md"
+              className="gap-2 rounded-xl shadow-md w-full sm:w-auto"
             >
               <Plus className="w-4 h-4" />
               New Canvas
@@ -189,7 +189,7 @@ export default function CanvasProjectsList() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-6xl mx-auto px-6 py-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
@@ -250,8 +250,8 @@ export default function CanvasProjectsList() {
                     </p>
                   </div>
 
-                  {/* Actions menu */}
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Actions menu — always visible on touch, hover-only on desktop */}
+                  <div className="absolute top-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
@@ -338,7 +338,8 @@ export default function CanvasProjectsList() {
                       Updated {format(project.updatedAt, 'MMM d, yyyy h:mm a')}
                     </p>
                   </div>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                  {/* Actions — always visible on touch, hover-only on desktop */}
+                  <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center gap-1">
                     <button
                       className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                       onClick={(e) => {

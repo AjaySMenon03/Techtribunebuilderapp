@@ -10,6 +10,13 @@ import {
 
 import { cn } from "./utils";
 
+/** Strips Figma Make inspector props (_fg*) before they reach SVG/DOM elements */
+function cleanProps<T extends Record<string, unknown>>(props: T): Omit<T, `_fg${string}`> {
+  return Object.fromEntries(
+    Object.entries(props).filter(([k]) => !k.startsWith('_fg'))
+  ) as any;
+}
+
 function Select({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
@@ -34,14 +41,7 @@ const SelectTrigger = React.forwardRef<
     size?: "sm" | "default";
   }
 >(({ className, size = "default", children, ...props }, ref) => {
-  // Filter out Figma inspection props that shouldn't be passed to DOM elements
-  const filteredProps = Object.keys(props).reduce((acc, key) => {
-    if (!key.startsWith('_fg')) {
-      acc[key] = props[key];
-    }
-    return acc;
-  }, {} as any);
-  
+  const filteredProps = cleanProps(props);
   return (
     <SelectPrimitive.Trigger
       ref={ref}
@@ -55,7 +55,7 @@ const SelectTrigger = React.forwardRef<
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon />
+        <ChevronDownIcon {...cleanProps({ className: "size-4 opacity-50" })} />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -158,7 +158,7 @@ function SelectScrollUpButton({
         "flex cursor-default items-center justify-center py-1",
         className,
       )}
-      {...props}
+      {...cleanProps(props)}
     >
       <ChevronUpIcon className="size-4" />
     </SelectPrimitive.ScrollUpButton>
@@ -176,7 +176,7 @@ function SelectScrollDownButton({
         "flex cursor-default items-center justify-center py-1",
         className,
       )}
-      {...props}
+      {...cleanProps(props)}
     >
       <ChevronDownIcon className="size-4" />
     </SelectPrimitive.ScrollDownButton>

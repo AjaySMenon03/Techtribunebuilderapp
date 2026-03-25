@@ -124,14 +124,14 @@ export default function TopActionBar({ canvasRef, onExport, onAI, onSave, projec
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs">Back to Projects</TooltipContent>
             </Tooltip>
-            <span className="text-sm font-medium text-foreground max-w-[160px] truncate px-1">
+            <span className="text-sm font-medium text-foreground max-w-[80px] sm:max-w-[160px] truncate px-1">
               {projectName || 'Untitled Canvas'}
             </span>
           </div>
         </div>
 
-        {/* Center: Undo/Redo */}
-        <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-white/75 dark:bg-slate-900/75 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-lg pointer-events-auto">
+        {/* Center: Undo/Redo — hidden on small screens to prevent overlap */}
+        <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-xl bg-white/75 dark:bg-slate-900/75 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-lg pointer-events-auto">
           <ActionBtn icon={<Undo2 className="w-3.5 h-3.5" />} label="Undo (Ctrl+Z)" onClick={handleUndo} />
           <ActionBtn icon={<Redo2 className="w-3.5 h-3.5" />} label="Redo (Ctrl+Y)" onClick={handleRedo} />
 
@@ -235,19 +235,28 @@ export default function TopActionBar({ canvasRef, onExport, onAI, onSave, projec
         {/* Right: Actions */}
         <div className="flex items-center gap-1.5 pointer-events-auto">
           <div className="flex items-center gap-0.5 px-2 py-1 rounded-xl bg-white/75 dark:bg-slate-900/75 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-lg">
+            {/* Undo/Redo — only shown on mobile where center bar is hidden */}
+            <div className="flex sm:hidden items-center gap-0.5 mr-0.5">
+              <ActionBtn icon={<Undo2 className="w-3.5 h-3.5" />} label="Undo" onClick={handleUndo} />
+              <ActionBtn icon={<Redo2 className="w-3.5 h-3.5" />} label="Redo" onClick={handleRedo} />
+              <div className="w-px h-5 bg-border/30 mx-0.5" />
+            </div>
+
             <ActionBtn
               icon={<Keyboard className="w-3.5 h-3.5" />}
               label="Shortcuts (?)"
               onClick={() => setShortcutsOpen(true)}
+              className="hidden sm:flex"
             />
             <ActionBtn
               icon={<PanelRight className="w-3.5 h-3.5" />}
               label="Properties Panel"
               onClick={toggleRightPanel}
               active={rightPanelOpen}
+              className="hidden sm:flex"
             />
 
-            <div className="w-px h-5 bg-border/30 mx-0.5" />
+            <div className="hidden sm:block w-px h-5 bg-border/30 mx-0.5" />
 
             <Tooltip>
               <TooltipTrigger asChild>
